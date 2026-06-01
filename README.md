@@ -2,4 +2,4 @@
 Websiteprojekt
 
 Tools die im Folgenden verwendet werden:
-python3-pandas python3-openpyxl
+Folgende Python3 Extensions: pandas openpyxl psycopg2-binary
