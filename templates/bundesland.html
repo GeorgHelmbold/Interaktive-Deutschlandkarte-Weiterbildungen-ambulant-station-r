@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ bundesland }}</title>
+</head>
+<body>
+    <h1>{{ bundesland }}</h1>
+    <form action="/suche" method="get">
+        <input type="hidden" name="bundesland" value="{{ bundesland }}">
+        <input type="text" name="begriff" placeholder="Suchen..." value="{{ begriff if begriff else '' }}">
+        <label>
+            <input type="radio" name="typ" value="alle" {% if typ == "alle" or not typ %}checked{% endif %}> Alle
+        </label>
+        <label>
+            <input type="radio" name="typ" value="ambulant" {% if typ == "ambulant" %}checked{% endif %}> Ambulant
+        </label>
+        <label>
+            <input type="radio" name="typ" value="stationär" {% if typ == "stationär" %}checked{% endif %}> Stationär
+        </label>
+        <button type="submit">Suchen</button>
+    </form>
+    {% if rows %}
+    <table border="1">
+        <tr>
+            {% for key in rows[0].keys() %}
+                <th>{{ key }}</th>
+            {% endfor %}
+        </tr>
+        {% for row in rows %}
+        <tr>
+            {% for value in row.values() %}
+                <td>{{ value }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+    <p>Keine Ergebnisse gefunden.</p>
+    {% endif %}
+</body>
+</html>

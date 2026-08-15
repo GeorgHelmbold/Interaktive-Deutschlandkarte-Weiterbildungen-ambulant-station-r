@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Alle Bundesländer</title>
+</head>
+<body>
+    <h1>Alle Bundesländer</h1>
+    <table border="1">
+        <tr>
+            {% for key in rows[0].keys() %}
+                <th>{{ key }}</th>
+            {% endfor %}
+        </tr>
+        {% for row in rows %}
+        <tr>
+            {% for value in row.values() %}
+                <td>{{ value }}</td>
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
