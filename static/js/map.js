@@ -30,8 +30,12 @@ fetch('/api/standorte')
 
             var popupContent = `
                 <b>${standort["Einrichtung"] || "Unbekannte Einrichtung"}</b><br>
-                ${standort["Kreis"]}, ${standort["bundesland"]}<br>
-                ${standort["Angaben zur Person"] || ""}
+                <b>Kreis:</b> ${standort["Kreis"]}, ${standort["bundesland"]}<br>
+                <b>Landesärztekammer:</b> ${standort["Landesärztekammer"] || "-"}<br>
+                <b>Art:</b> ${standort["ambulant/stationär/niedergelassen"] || "-"}<br>
+                <b>Weiterbildungsermächtigung:</b> ${standort["Weiterbildungsermächtigung für Nephrologie"] || "-"}<br>
+                <b>Befugnis:</b> ${standort["Befugnis"] || "-"}<br>
+                <b>Angaben zur Person:</b> ${standort["Angaben zur Person"] || "-"}
             `;
 
             marker.bindPopup(popupContent);

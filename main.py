@@ -31,7 +31,7 @@ def create_connection(
         host=config.host,
         port=config.port,
         dbname=config.database,
-        user=config.db_username,   # <- war: config.username
+        user=config.db_username,
         password=config.password
     )
     try:

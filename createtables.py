@@ -39,9 +39,15 @@ def geocode_query(query: str, max_retries: int = 5):
         "limit": 1
     }
 
-    wait = 0.5
+    wait = 0.2
     for versuch in range(max_retries):
-        resp = requests.get(url, params=params)
+        try:
+            resp = requests.get(url, params=params, timeout=10)
+        except requests.exceptions.RequestException as e:
+            print(f"⏳ Netzwerkfehler bei '{query}': {e} — warte {wait}s (Versuch {versuch + 1}/{max_retries})")
+            time.sleep(wait)
+            wait *= 2
+            continue
 
         if resp.status_code == 429:
             print(f"⏳ Rate-Limit erreicht bei '{query}', warte {wait}s (Versuch {versuch + 1}/{max_retries})")
@@ -112,7 +118,8 @@ def maketables(bundesland):
                 cur.execute(querie)
             else:
                 kreis = attribut2
-                koordinaten = geocode(kreis, bundesland, attribut7)
+                einrichtung = attribut7
+                koordinaten = geocode(kreis, bundesland, einrichtung)
                 lat, lng = koordinaten if koordinaten else (None, None)
 
                 insert_query = f'''
