@@ -31,14 +31,13 @@ def create_connection(
         host=config.host,
         port=config.port,
         dbname=config.database,
-        user=config.username,
+        user=config.db_username,   # <- war: config.username
         password=config.password
     )
     try:
         yield conn
     finally:
         conn.close()
-
 
 @app.get("/", response_class=HTMLResponse)
 def home():
@@ -57,7 +56,7 @@ def api_standorte():
         cur.execute("SELECT * FROM alle_bundesländer")
         rows = cur.fetchall()
         cur.close()
-    return rows
+    return [dict(row) for row in rows]
 
 
 @app.get("/data", response_class=HTMLResponse)
