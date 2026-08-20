@@ -1,5 +1,15 @@
 // Karte initialisieren, Startposition Mitte Deutschlands
-var map = L.map('map').setView([51.1657, 10.4515], 6);
+var deutschlandBounds = L.latLngBounds(
+    L.latLng(47.0, 5.5),   // Südwesten
+    L.latLng(56.2, 15.5)   // Nordosten
+);
+
+var map = L.map('map', {
+    minZoom: 5,
+    maxZoom: 10,
+    maxBounds: deutschlandBounds,
+    maxBoundsViscosity: 1.0  // verhindert komplett das Rausziehen über die Grenze
+}).setView([51.1657, 10.4515], 6);
 
 // Tile-Layer (OpenStreetMap)
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {

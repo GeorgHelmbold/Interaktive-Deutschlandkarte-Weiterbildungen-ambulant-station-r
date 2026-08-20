@@ -19,45 +19,62 @@ cur = conn.cursor()
 
 bundesländer = ["Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen", "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen", "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"]
 
-geo_cache = {}  # (bundesland, kreis) -> (lat, lng) oder None
+geo_cache = {}  # query-String -> (lat, lng) oder None
 
-def geocode(kreis: str, bundesland: str, max_retries: int = 5):
-    key = (bundesland, kreis)
-    if key in geo_cache:
-        return geo_cache[key]
+def extract_adresse(einrichtung: str) -> str:
+    vor_klammer = einrichtung.split('(')[0].strip()
+    teile = [t.strip() for t in vor_klammer.split(',')]
+    adresse = ', '.join(teile[-2:])
+    return adresse.strip()
+
+def geocode_query(query: str, max_retries: int = 5):
+    if query in geo_cache:
+        return geo_cache[query]
 
     url = "https://us1.locationiq.com/v1/search"
     params = {
         "key": geo_config.locationiq_api_key,
-        "q": f"{kreis}, {bundesland}, Germany",
+        "q": f"{query}, Germany",
         "format": "json",
         "limit": 1
     }
 
-    wait = 0.5  # Basis-Wartezeit
+    wait = 0.5
     for versuch in range(max_retries):
         resp = requests.get(url, params=params)
 
         if resp.status_code == 429:
-            print(f"⏳ Rate-Limit erreicht bei '{kreis}, {bundesland}', warte {wait}s (Versuch {versuch + 1}/{max_retries})")
+            print(f"⏳ Rate-Limit erreicht bei '{query}', warte {wait}s (Versuch {versuch + 1}/{max_retries})")
             time.sleep(wait)
-            wait *= 2  # exponentielles Backoff: 0.5 → 1.0 → 2.0 → 4.0 → 8.0
+            wait *= 2
             continue
 
         if resp.status_code != 200 or not resp.json():
-            print(f"⚠️  Kein Geocoding-Treffer für: {kreis}, {bundesland} — Status {resp.status_code}: {resp.text}")
-            geo_cache[key] = None
+            geo_cache[query] = None
             return None
 
         data = resp.json()[0]
         result = (float(data["lat"]), float(data["lon"]))
-        geo_cache[key] = result
-        time.sleep(0.5)  # normale Pause zwischen erfolgreichen Requests
+        geo_cache[query] = result
+        time.sleep(0.5)
         return result
 
-    print(f"❌ Geocoding endgültig fehlgeschlagen nach {max_retries} Versuchen: {kreis}, {bundesland}")
-    geo_cache[key] = None
+    geo_cache[query] = None
     return None
+
+
+def geocode(kreis: str, bundesland: str, einrichtung: str):
+    adresse = extract_adresse(einrichtung)
+    koordinaten = geocode_query(adresse)
+
+    if koordinaten is None:
+        print(f"⚠️  Adress-Geocoding fehlgeschlagen für '{adresse}' — Fallback auf Kreis: {kreis}, {bundesland}")
+        koordinaten = geocode_query(f"{kreis}, {bundesland}")
+
+    if koordinaten is None:
+        print(f"❌ Auch Kreis-Fallback fehlgeschlagen: {kreis}, {bundesland}")
+
+    return koordinaten
 
 
 def maketables(bundesland):
@@ -95,7 +112,7 @@ def maketables(bundesland):
                 cur.execute(querie)
             else:
                 kreis = attribut2
-                koordinaten = geocode(kreis, bundesland)
+                koordinaten = geocode(kreis, bundesland, attribut7)
                 lat, lng = koordinaten if koordinaten else (None, None)
 
                 insert_query = f'''
@@ -105,8 +122,6 @@ def maketables(bundesland):
                 cur.execute(insert_query, (attribut1, attribut2, attribut3, attribut4, attribut5, attribut6, attribut7, lat, lng))
             zeilennr += 1
 
-
-print(f"DEBUG: verwendeter Key = {geo_config.locationiq_api_key!r}")
 
 drop_view = '''
     DROP MATERIALIZED VIEW IF EXISTS alle_bundesländer;
