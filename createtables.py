@@ -12,7 +12,7 @@ conn = psycopg2.connect(
     host=config.host,
     port=config.port,
     dbname=config.database,
-    user=config.username,
+    user=config.db_username,
     password=config.password
 )
 cur = conn.cursor()
@@ -45,7 +45,7 @@ def geocode(kreis: str, bundesland: str, max_retries: int = 5):
             continue
 
         if resp.status_code != 200 or not resp.json():
-            print(f"⚠️  Kein Geocoding-Treffer für: {kreis}, {bundesland}")
+            print(f"⚠️  Kein Geocoding-Treffer für: {kreis}, {bundesland} — Status {resp.status_code}: {resp.text}")
             geo_cache[key] = None
             return None
 
@@ -106,6 +106,14 @@ def maketables(bundesland):
             zeilennr += 1
 
 
+print(f"DEBUG: verwendeter Key = {geo_config.locationiq_api_key!r}")
+
+drop_view = '''
+    DROP MATERIALIZED VIEW IF EXISTS alle_bundesländer;
+'''
+cur.execute(drop_view)
+conn.commit()
+
 for bundesland in bundesländer:
     maketables(bundesland)
 conn.commit()
@@ -115,10 +123,6 @@ union_parts = [
     for bundesland in bundesländer
 ]
 view_query = "CREATE MATERIALIZED VIEW alle_bundesländer AS\n" + "\nUNION ALL\n".join(union_parts) + ";"
-drop_view = f'''
-    DROP MATERIALIZED VIEW IF EXISTS alle_bundesländer;
-'''
-cur.execute(drop_view)
 cur.execute(view_query)
 conn.commit()
 

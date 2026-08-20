@@ -6,7 +6,7 @@ class ConnectionConfig(BaseSettings):
     host: str
     port: int
     database: str
-    username: str
+    db_username: str
     password: str
 
 class GeocodingConfig(BaseSettings):
