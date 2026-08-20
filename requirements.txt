@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+jinja2
+psycopg2-binary
+pandas
+pydantic-settings
