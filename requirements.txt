@@ -4,3 +4,5 @@ jinja2
 psycopg2-binary
 pandas
 pydantic-settings
+requests
+openpyxl
