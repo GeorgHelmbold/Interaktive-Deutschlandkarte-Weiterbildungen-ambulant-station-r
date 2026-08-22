@@ -41,7 +41,7 @@ def create_connection(
 
 @app.get("/", response_class=HTMLResponse)
 def home():
-    return "<h1>message</h1>"
+    return "<h1>Karte der DGFN zu weiterbildungsermächtigten Einrichtungen</h1>"
 
 
 @app.get("/karte", response_class=HTMLResponse)
@@ -63,7 +63,8 @@ def api_standorte():
 def all_bundeslaender(request: Request):
     with create_connection(config) as conn:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT * FROM alle_bundesländer")
+        cur.execute("""SELECT "Landesärztekammer", "Kreis", "ambulant/stationär/niedergelassen", "Weiterbildungsermächtigung für Nephrologie", "Befugnis", "Angaben zur Person", "Einrichtung"
+        FROM alle_bundesländer""")
         rows = cur.fetchall()
         cur.close()
 
@@ -81,7 +82,8 @@ def table_access(request: Request, bundesland: str):
 
     with create_connection(config) as conn:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        query = f'SELECT * FROM "{bundesland}"'
+        query = f"""SELECT "Landesärztekammer", "Kreis", "ambulant/stationär/niedergelassen", "Weiterbildungsermächtigung für Nephrologie", "Befugnis", "Angaben zur Person", "Einrichtung"
+        FROM "{bundesland}" """
         cur.execute(query)
         rows = cur.fetchall()
         cur.close()
@@ -105,7 +107,8 @@ def suche(request: Request, bundesland: str, begriff: str = "", typ: str = "alle
 
         if typ == "alle":
             query = '''
-                SELECT * FROM "{}"
+                SELECT "Landesärztekammer", "Kreis", "ambulant/stationär/niedergelassen", "Weiterbildungsermächtigung für Nephrologie", "Befugnis", "Angaben zur Person", "Einrichtung"
+                FROM "{}"
                 WHERE "Kreis" ILIKE %s
                    OR "Einrichtung" ILIKE %s
                    OR "Angaben zur Person" ILIKE %s
@@ -114,7 +117,8 @@ def suche(request: Request, bundesland: str, begriff: str = "", typ: str = "alle
         else:
             typincludes = f"%{typ}%"
             query = '''
-                SELECT * FROM "{}"
+                SELECT "Landesärztekammer", "Kreis", "ambulant/stationär/niedergelassen", "Weiterbildungsermächtigung für Nephrologie", "Befugnis", "Angaben zur Person", "Einrichtung"
+                FROM "{}"
                 WHERE ("Kreis" ILIKE %s
                    OR "Einrichtung" ILIKE %s
                    OR "Angaben zur Person" ILIKE %s)
@@ -133,22 +137,38 @@ def suche(request: Request, bundesland: str, begriff: str = "", typ: str = "alle
 
 
 @app.get("/suche-alle", response_class=HTMLResponse)
-def suche_alle(request: Request, begriff: str = ""):
+def suche_alle(request: Request, begriff: str = "", typ: str = "alle"):
     suchwert = f"%{begriff}%"
 
     with create_connection(config) as conn:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        query = '''
-            SELECT * FROM alle_bundesländer
-            WHERE "Kreis" ILIKE %s
-               OR "Einrichtung" ILIKE %s
-        '''
-        cur.execute(query, (suchwert, suchwert))
+
+        if typ == "alle":
+            query = '''
+                SELECT "Landesärztekammer", "Kreis", "ambulant/stationär/niedergelassen", "Weiterbildungsermächtigung für Nephrologie", "Befugnis", "Angaben zur Person", "Einrichtung"
+                FROM alle_bundesländer
+                WHERE "Kreis" ILIKE %s
+                   OR "Einrichtung" ILIKE %s
+                   OR "Angaben zur Person" ILIKE %s
+            '''
+            cur.execute(query, (suchwert, suchwert, suchwert))
+        else:
+            typincludes = f"%{typ}%"
+            query = '''
+                SELECT "Landesärztekammer", "Kreis", "ambulant/stationär/niedergelassen", "Weiterbildungsermächtigung für Nephrologie", "Befugnis", "Angaben zur Person", "Einrichtung"
+                FROM alle_bundesländer
+                WHERE ("Kreis" ILIKE %s
+                   OR "Einrichtung" ILIKE %s
+                   OR "Angaben zur Person" ILIKE %s)
+                  AND "ambulant/stationär/niedergelassen" LIKE %s
+            '''
+            cur.execute(query, (suchwert, suchwert, suchwert, typincludes))
+
         rows = cur.fetchall()
         cur.close()
 
     return templates.TemplateResponse(
         request,
         "alle_bundeslaender.html",
-        {"rows": rows}
+        {"rows": rows, "typ": typ, "begriff": begriff}
     )
