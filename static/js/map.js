@@ -6,14 +6,14 @@ var deutschlandBounds = L.latLngBounds(
 
 var map = L.map('map', {
     minZoom: 5,
-    maxZoom: 10,
+    maxZoom: 20,
     maxBounds: deutschlandBounds,
     maxBoundsViscosity: 1.0  // verhindert komplett das Rausziehen über die Grenze
 }).setView([51.1657, 10.4515], 6);
 
 // Tile-Layer (OpenStreetMap)
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
+    maxZoom: 20,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 

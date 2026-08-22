@@ -6,7 +6,9 @@
 <body>
 <h1>Alle Bundesländer</h1>
 <form action="/suche-alle" method="get">
-<input type="text" name="begriff" placeholder="Suchen..." value="{{ begriff if begriff else '' }}">
+<input type="text" name="ort_begriff" placeholder="Suche nach Ort..." value="{{ ort_begriff if ort_begriff else '' }}">
+<input type="text" name="person_begriff" placeholder="Suche nach Person..." value="{{ person_begriff if person_begriff else '' }}">
+
 <label>
 <input type="radio" name="typ" value="alle" {% if typ == "alle" or not typ %}checked{% endif %}> Alle
 </label>

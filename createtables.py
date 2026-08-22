@@ -3,6 +3,7 @@ import time
 import requests
 import psycopg2
 import sys
+import re
 from entities import ConnectionConfig, GeocodingConfig
 
 config = ConnectionConfig()
@@ -22,8 +23,12 @@ bundesländer = ["Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Breme
 geo_cache = {}  # query-String -> (lat, lng) oder None
 
 def extract_adresse(einrichtung: str) -> str:
-    vor_klammer = einrichtung.split('(')[0].strip()
-    teile = [t.strip() for t in vor_klammer.split(',')]
+    if ',' not in einrichtung:
+        return ""
+
+    ohne_klammern = re.sub(r'\([^()]*\)', '', einrichtung)
+    ohne_klammern = re.sub(r'\s+', ' ', ohne_klammern).strip()
+    teile = [t.strip() for t in ohne_klammern.split(',')]
     adresse = ', '.join(teile[-2:])
     return adresse.strip()
 
@@ -34,12 +39,13 @@ def geocode_query(query: str, max_retries: int = 5):
     url = "https://us1.locationiq.com/v1/search"
     params = {
         "key": geo_config.locationiq_api_key,
-        "q": f"{query}, Germany",
+        "q": query,                  # String unberührt lassen!
+        "countrycodes": "de",        # Beschränkt die Suche strikt auf Deutschland (ISO 3166-1 alpha-2)
         "format": "json",
         "limit": 1
     }
 
-    wait = 0.2
+    wait = 0.3
     for versuch in range(max_retries):
         try:
             resp = requests.get(url, params=params, timeout=10)
@@ -62,7 +68,7 @@ def geocode_query(query: str, max_retries: int = 5):
         data = resp.json()[0]
         result = (float(data["lat"]), float(data["lon"]))
         geo_cache[query] = result
-        time.sleep(0.5)
+        time.sleep(0.8)
         return result
 
     geo_cache[query] = None
@@ -71,7 +77,10 @@ def geocode_query(query: str, max_retries: int = 5):
 
 def geocode(kreis: str, bundesland: str, einrichtung: str):
     adresse = extract_adresse(einrichtung)
-    koordinaten = geocode_query(adresse)
+
+    koordinaten = None
+    if len(adresse) >= 6:  # zu kurze/leere Strings gar nicht erst an die API schicken
+        koordinaten = geocode_query(adresse)
 
     if koordinaten is None:
         print(f"⚠️  Adress-Geocoding fehlgeschlagen für '{adresse}' — Fallback auf Kreis: {kreis}, {bundesland}")
@@ -81,7 +90,6 @@ def geocode(kreis: str, bundesland: str, einrichtung: str):
         print(f"❌ Auch Kreis-Fallback fehlgeschlagen: {kreis}, {bundesland}")
 
     return koordinaten
-
 
 def maketables(bundesland):
     with open(f'{bundesland}.csv') as csvdatei:

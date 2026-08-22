@@ -1,41 +1,44 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>{{ bundesland }}</title>
+<title>{{ bundesland }}</title>
 </head>
 <body>
-    <h1>{{ bundesland }}</h1>
-    <form action="/suche" method="get">
-        <input type="hidden" name="bundesland" value="{{ bundesland }}">
-        <input type="text" name="begriff" placeholder="Suchen..." value="{{ begriff if begriff else '' }}">
-        <label>
-            <input type="radio" name="typ" value="alle" {% if typ == "alle" or not typ %}checked{% endif %}> Alle
-        </label>
-        <label>
-            <input type="radio" name="typ" value="ambulant" {% if typ == "ambulant" %}checked{% endif %}> Ambulant
-        </label>
-        <label>
-            <input type="radio" name="typ" value="stationär" {% if typ == "stationär" %}checked{% endif %}> Stationär
-        </label>
-        <button type="submit">Suchen</button>
-    </form>
+<h1>{{ bundesland }}</h1>
+<form action="/suche" method="get">
+<input type="hidden" name="bundesland" value="{{ bundesland }}">
+
+<input type="text" name="ort_begriff" placeholder="Suche nach Ort..." value="{{ ort_begriff if ort_begriff else '' }}">
+<input type="text" name="person_begriff" placeholder="Suche nach Person..." value="{{ person_begriff if person_begriff else '' }}">
+
+<label>
+<input type="radio" name="typ" value="alle" {% if typ == "alle" or not typ %}checked{% endif %}> Alle
+</label>
+<label>
+<input type="radio" name="typ" value="ambulant" {% if typ == "ambulant" %}checked{% endif %}> Ambulant
+</label>
+<label>
+<input type="radio" name="typ" value="stationär" {% if typ == "stationär" %}checked{% endif %}> Stationär
+</label>
+<button type="submit">Suchen</button>
+</form>
     {% if rows %}
-    <table border="1">
-        <tr>
+<table border="1">
+<tr>
             {% for key in rows[0].keys() %}
-                <th>{{ key }}</th>
+<th>{{ key }}</th>
             {% endfor %}
-        </tr>
+</tr>
         {% for row in rows %}
-        <tr>
+<tr>
             {% for value in row.values() %}
-                <td>{{ value }}</td>
+<td>{{ value }}</td>
             {% endfor %}
-        </tr>
+</tr>
         {% endfor %}
-    </table>
+</table>
     {% else %}
-    <p>Keine Ergebnisse gefunden.</p>
+<p>Keine Ergebnisse gefunden.</p>
     {% endif %}
 </body>
 </html>
