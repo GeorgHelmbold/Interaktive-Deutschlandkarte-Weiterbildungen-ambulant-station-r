@@ -83,11 +83,13 @@ def geocode_query(query: str, max_retries: int = 5):
     return None
 
 
+FALLBACK_LAT, FALLBACK_LNG = 50.970097, 9.687096  # Bad Hersfeld – bekannter LocationIQ-Fallback
+
 def geocode(kreis: str, bundesland: str, einrichtung: str):
     adresse = extract_adresse(einrichtung)
 
     koordinaten = None
-    if len(adresse) >= 6:  # zu kurze/leere Strings gar nicht erst an die API schicken
+    if len(adresse) >= 6:
         koordinaten = geocode_query(adresse)
 
     if koordinaten is None:
@@ -96,10 +98,8 @@ def geocode(kreis: str, bundesland: str, einrichtung: str):
 
     if koordinaten is None:
         print(f"❌ Auch Kreis-Fallback fehlgeschlagen: {kreis}, {bundesland}")
-
-    FALLBACK_COORD = (9.687096, 50.970097)
-    if (lng, lat) == FALLBACK_COORD:
-        log_warnung(f"Fallback-Koordinate für Query: {query}")
+    elif koordinaten == (FALLBACK_LAT, FALLBACK_LNG):
+        print(f"⚠️  Fallback-Koordinate (Bad Hersfeld) erhalten für '{adresse or kreis}' — vermutlich fehlgeschlagenes Geocoding")
 
     return koordinaten
 
