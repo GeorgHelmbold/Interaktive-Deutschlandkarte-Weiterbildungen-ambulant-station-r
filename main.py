@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+import json
 import psycopg2
 import psycopg2.extras
 from contextlib import contextmanager
@@ -175,4 +176,53 @@ def suche_alle(request: Request, ort_begriff: str = "", person_begriff: str = ""
         request,
         "alle_bundeslaender.html",
         {"rows": rows, "typ": typ, "ort_begriff": ort_begriff, "person_begriff": person_begriff}
+    )
+
+@app.get("/chart", response_class=HTMLResponse)
+def chart(request: Request, ort_begriff: str = "", person_begriff: str = "", typ: str = "alle"):
+    bedingungen = []
+    werte = []
+
+    if ort_begriff:
+        bedingungen.append('("Kreis" ILIKE %s OR "Einrichtung" ILIKE %s)')
+        wert = f"%{ort_begriff}%"
+        werte.extend([wert, wert])
+
+    if person_begriff:
+        bedingungen.append('("Angaben zur Person" ILIKE %s OR "Einrichtung" ILIKE %s)')
+        wert = f"%{person_begriff}%"
+        werte.extend([wert, wert])
+
+    if typ != "alle":
+        bedingungen.append('"ambulant/stationär/niedergelassen" LIKE %s')
+        werte.append(f"%{typ}%")
+
+    where_klausel = " AND ".join(bedingungen) if bedingungen else "TRUE"
+
+    query = '''
+        SELECT *
+        FROM alle_bundesländer
+        WHERE {}
+    '''.format(where_klausel)
+
+    with create_connection(config) as conn:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cur.execute(query, tuple(werte))
+        rows = cur.fetchall()
+        cur.close()
+
+    rows_dicts = [dict(row) for row in rows]
+    standorte_json = json.dumps(rows_dicts, ensure_ascii=False).replace("</", "<\\/")
+
+    # Für die Tabellenanzeige: lat/lng (und bundesland) rausfiltern
+    ausgeschlossene_spalten = {"lat", "lng", "bundesland"}
+    tabellen_rows = [
+        {k: v for k, v in row.items() if k not in ausgeschlossene_spalten}
+        for row in rows_dicts
+    ]
+
+    return templates.TemplateResponse(
+        request,
+        "chart.html",
+        {"rows": tabellen_rows, "typ": typ, "ort_begriff": ort_begriff, "person_begriff": person_begriff, "standorte_json": standorte_json}
     )
