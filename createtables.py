@@ -29,8 +29,16 @@ def extract_adresse(einrichtung: str) -> str:
     ohne_klammern = re.sub(r'\([^()]*\)', '', einrichtung)
     ohne_klammern = re.sub(r'\s+', ' ', ohne_klammern).strip()
     teile = [t.strip() for t in ohne_klammern.split(',')]
-    adresse = ', '.join(teile[-2:])
-    return adresse.strip()
+    letzte_zwei = teile[-2:]
+
+    if not re.match(r'^\d{5}\s', letzte_zwei[-1]):
+        print(
+            "WARNUNG: Adressextraktion auffällig – letztes Segment beginnt nicht mit PLZ: "
+            f"einrichtung={einrichtung!r} -> extrahiert={letzte_zwei!r}"
+        )
+
+    adresse = ', '.join(letzte_zwei)
+    return adresse
 
 def geocode_query(query: str, max_retries: int = 5):
     if query in geo_cache:
@@ -88,6 +96,10 @@ def geocode(kreis: str, bundesland: str, einrichtung: str):
 
     if koordinaten is None:
         print(f"❌ Auch Kreis-Fallback fehlgeschlagen: {kreis}, {bundesland}")
+
+    FALLBACK_COORD = (9.687096, 50.970097)
+    if (lng, lat) == FALLBACK_COORD:
+        log_warnung(f"Fallback-Koordinate für Query: {query}")
 
     return koordinaten
 
