@@ -9,8 +9,7 @@ Gesamttabelle und nach Bundesland gefiltert bereit.
 - Python 3.10 oder neuer
 - PostgreSQL
 - ein LocationIQ API-Key für die Adress-Geocodierung
-- die Excel-Datei `Weiterbildungsbefugnisse Stand 72025_Tariq.xlsx` im
-	Projektordner
+- genau eine Excel-Datei mit der Endung `.xlsx` im Projektordner
 
 Die Anwendung erwartet eine `.env`-Datei im Projektordner. Sie wird nicht ins
 Repository eingecheckt.
@@ -39,6 +38,11 @@ Im Projektordner genügt:
 ```bash
 ./start.sh
 ```
+
+`start.sh` ist für einen vollständigen Datenimport gedacht. Bei jedem Aufruf
+wird die einzige Excel-Datei im Projektordner erneut in CSV-Dateien umgewandelt
+und die Datenbank anschließend vollständig neu aufgebaut. Gibt es keine oder
+mehr als eine `.xlsx`-Datei, wird der Start mit einer Fehlermeldung abgebrochen.
 
 Das Skript führt diese Schritte aus:
 
@@ -77,9 +81,8 @@ uvicorn main:app --reload
 
 ### Excel in CSV-Dateien umwandeln
 
-`convert.py` erwartet die Datei
-`Weiterbildungsbefugnisse Stand 72025_Tariq.xlsx` im Projektordner. Sie wird
-blattweise eingelesen und als CSV-Datei gespeichert:
+`convert.py` sucht genau eine `.xlsx`-Datei im Projektordner. Der Dateiname ist
+beliebig. Die Arbeitsblätter werden eingelesen und als CSV-Dateien gespeichert:
 
 ```bash
 source .venv/bin/activate
@@ -88,7 +91,8 @@ python convert.py
 
 Die erzeugten CSV-Dateien werden im Projektordner abgelegt und sind wegen ihrer
 Größe vom Repository ausgeschlossen. Die Excel-Datei ist nicht Bestandteil des
-Repositories und muss separat bereitgestellt werden.
+Repositories und muss separat bereitgestellt werden. Im Projektordner darf für
+den automatischen Start genau eine `.xlsx`-Datei liegen.
 
 ### PostgreSQL-Tabellen erstellen
 
@@ -104,7 +108,8 @@ Ansicht `alle_bundesländer` neu erstellt.
 
 **Achtung:** Die Tabellen und die Ansicht werden bei jedem Lauf gelöscht und
 vollständig neu aufgebaut. Das Skript benötigt eine aktive PostgreSQL-Verbindung
-und kann wegen der externen Geocoding-Anfragen einige Zeit laufen.
+und kann wegen der externen Geocoding-Anfragen einige Zeit laufen. Auch
+`start.sh` führt diesen vollständigen Neuaufbau bei jedem Start aus.
 
 ## Wichtige Routen
 
@@ -137,7 +142,7 @@ static/                 CSS und JavaScript
 	müssen vorhanden sein.
 - **Datenbankfehler:** Prüfen, ob PostgreSQL läuft, die Zugangsdaten stimmen
 	und der Benutzer Tabellen anlegen darf.
-- **Fehlende Excel-Datei:** `Weiterbildungsbefugnisse Stand 72025_Tariq.xlsx`
-	in den Projektordner legen. Sie wird durch `convert.py` benötigt.
+- **Fehlende oder mehrere Excel-Dateien:** Genau eine `.xlsx`-Datei in den
+	Projektordner legen. Ihr Dateiname ist beliebig.
 - **Kein Geocoding:** LocationIQ-Key, Internetverbindung und API-Limit prüfen.
 

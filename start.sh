@@ -13,6 +13,13 @@ source "$VENV_DIR/bin/activate"
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 
+shopt -s nullglob
+excel_dateien=("$PROJECT_DIR"/*.xlsx)
+if (( ${#excel_dateien[@]} != 1 )); then
+	printf 'Fehler: Es muss genau eine Excel-Datei (*.xlsx) im Projektordner liegen, gefunden wurden %d.\n' "${#excel_dateien[@]}" >&2
+	exit 1
+fi
+
 python convert.py
 python createtables.py
 exec uvicorn main:app --reload
