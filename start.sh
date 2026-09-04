@@ -7,6 +7,8 @@ VENV_DIR="$PROJECT_DIR/.venv"
 
 cd "$PROJECT_DIR"
 
+chmod +x "$PROJECT_DIR/run.sh"
+
 python3 -m venv "$VENV_DIR"
 source "$VENV_DIR/bin/activate"
 

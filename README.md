@@ -33,18 +33,34 @@ erstellen bzw. löschen dürfen.
 
 ## Installation und Start
 
-Im Projektordner genügt:
+Für den vollständigen Standard-Setup im Projektordner genügt:
 
 ```bash
 ./start.sh
 ```
+
+Dieser Start ist der "Neuanfang": Er erstellt die virtuelle Umgebung neu, lädt
+Abhängigkeiten, konvertiert die `.xlsx`-Datei in CSV-Dateien, baut die
+Datenbanktabellen neu auf und startet danach den Server.
+
+Wenn du nur die bereits vorbereitete Umgebung starten willst, ohne die Datenbank
+und CSV-Dateien erneut neu aufzubauen, kannst du direkt dieses Skript ausführen:
+
+```bash
+./run.sh
+```
+
+`run.sh` ist der "Schnellstart": Es aktiviert die vorhandene `.venv`, setzt
+bei Bedarf die Ausführungserlaubnis für sich selbst und startet nur die
+FastAPI-Anwendung. Es führt keine Datenkonvertierung und keinen Neuaufbau der
+Datenbank durch.
 
 `start.sh` ist für einen vollständigen Datenimport gedacht. Bei jedem Aufruf
 wird die einzige Excel-Datei im Projektordner erneut in CSV-Dateien umgewandelt
 und die Datenbank anschließend vollständig neu aufgebaut. Gibt es keine oder
 mehr als eine `.xlsx`-Datei, wird der Start mit einer Fehlermeldung abgebrochen.
 
-Das Skript führt diese Schritte aus:
+`start.sh` führt diese Schritte aus:
 
 1. Es erstellt `.venv` und aktiviert die virtuelle Umgebung.
 2. Es installiert bzw. aktualisiert die Pakete aus `requirements.txt`.
@@ -145,4 +161,3 @@ static/                 CSS und JavaScript
 - **Fehlende oder mehrere Excel-Dateien:** Genau eine `.xlsx`-Datei in den
 	Projektordner legen. Ihr Dateiname ist beliebig.
 - **Kein Geocoding:** LocationIQ-Key, Internetverbindung und API-Limit prüfen.
-
