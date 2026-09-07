@@ -24,4 +24,25 @@ fi
 
 python convert.py
 python createtables.py
+
+bundesland_csv_dateien=(
+	"Baden-Württemberg.csv"
+	"Bayern.csv"
+	"Berlin.csv"
+	"Brandenburg.csv"
+	"Bremen.csv"
+	"Hamburg.csv"
+	"Hessen.csv"
+	"Mecklenburg-Vorpommern.csv"
+	"Niedersachsen.csv"
+	"Nordrhein-Westfalen.csv"
+	"Rheinland-Pfalz.csv"
+	"Saarland.csv"
+	"Sachsen.csv"
+	"Sachsen-Anhalt.csv"
+	"Schleswig-Holstein.csv"
+	"Thüringen.csv"
+)
+rm -- "${bundesland_csv_dateien[@]}"
+
 uvicorn main:app --host 0.0.0.0 --port 8000
