@@ -10,6 +10,42 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 }).addTo(map);
 
+// Farbfunktion für Leaflet-Marker
+function erstelleIcon(farbe) {
+    return new L.Icon({
+        iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${farbe}.png`,
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+    });
+}
+
+var icons = {
+    blau: erstelleIcon('blue'),
+    rot: erstelleIcon('red'),
+    lila: erstelleIcon('violet'),
+    grau: erstelleIcon('grey')
+};
+
+// Ermittelt die passende Farbe für eine Gruppe von Standorten
+function ermittleFarbe(gruppe) {
+    var hatAmbulant = false;
+    var hatStationaer = false;
+
+    gruppe.forEach(standort => {
+        var typ = (standort["ambulant/stationär/niedergelassen"] || "").toLowerCase();
+        if (typ.includes('ambulant')) hatAmbulant = true;
+        if (typ.includes('stationär') || typ.includes('stationaer')) hatStationaer = true;
+    });
+
+    if (hatAmbulant && hatStationaer) return icons.lila;
+    if (hatStationaer) return icons.rot;
+    if (hatAmbulant) return icons.blau;
+    return icons.grau;
+}
+
 function formatiereEintrag(standort) {
     return `
         <b>${standort["Einrichtung"] || "Unbekannte Einrichtung"}</b><br>
@@ -34,7 +70,9 @@ function zeigeStandorte(standorte) {
 
     Object.values(gruppiert).forEach(gruppe => {
         var erster = gruppe[0];
-        var marker = L.marker([erster.lat, erster.lng]).addTo(map);
+        var icon = ermittleFarbe(gruppe);
+
+        var marker = L.marker([erster.lat, erster.lng], { icon: icon }).addTo(map);
 
         var popupContent = gruppe.map(formatiereEintrag).join('<hr>');
 
