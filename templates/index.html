@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>DGFN Weiterbildungsermächtigungen</title>
+</head>
+<body>
+    <h1>Karte der DGFN zu weiterbildungsermächtigten Einrichtungen</h1>
+
+    <h2>Karten & Kombinierte Ansichten</h2>
+    <ul>
+        <li><a href="/karte">Interaktive Karte aller Standorte</a></li>
+        <li><a href="/chart">Karte mit integrierter Tabellensuche (/chart)</a></li>
+    </ul>
+
+    <h2>Gesamtübersichten</h2>
+    <ul>
+        <li><a href="/data">Tabelle aller Einrichtungen (bundesweit)</a></li>
+        <li><a href="/suche-alle">Suchmaske für alle Bundesländer</a></li>
+    </ul>
+
+    <h2>Übersichten nach Bundesland</h2>
+    <ul>
+        {% for land in bundeslaender %}
+        <li>
+            <strong>{{ land }}:</strong>
+            <a href="/data/{{ land }}">Tabelle</a> |
+            <a href="/suche?bundesland={{ land }}">Suche</a>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <h2>Schnittstellen / API</h2>
+    <ul>
+        <li><a href="/api/standorte" target="_blank">Rohdaten aller Standorte (JSON)</a></li>
+    </ul>
+</body>
+</html>

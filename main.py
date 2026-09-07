@@ -41,9 +41,12 @@ def create_connection(
         conn.close()
 
 @app.get("/", response_class=HTMLResponse)
-def home():
-    return "<h1>Karte der DGFN zu weiterbildungsermächtigten Einrichtungen</h1>"
-
+def home(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "index.html",
+        {"bundeslaender": bundesländer}
+    )
 
 @app.get("/karte", response_class=HTMLResponse)
 def karte(request: Request):
