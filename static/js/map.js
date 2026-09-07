@@ -88,3 +88,17 @@ if (window.STANDORTE_DATA) {
         .then(zeigeStandorte)
         .catch(error => console.error('Fehler beim Laden der Standorte:', error));
 }
+
+var legende = L.control({ position: 'bottomright' });
+
+legende.onAdd = function (map) {
+    var div = L.DomUtil.create('div', 'info legend');
+    div.innerHTML += '<h4>Einrichtungstyp</h4>';
+    div.innerHTML += '<i style="background: #2A81CB"></i> Ambulant<br>';
+    div.innerHTML += '<i style="background: #CB2B3E"></i> Stationär<br>';
+    div.innerHTML += '<i style="background: #9C2BCB"></i> Beides<br>';
+    div.innerHTML += '<i style="background: #7B7B7B"></i> Keine Angabe';
+    return div;
+};
+
+legende.addTo(map);
