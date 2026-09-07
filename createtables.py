@@ -127,6 +127,8 @@ def maketables(bundesland):
             attribut5 = row[4]
             attribut6 = row[5]
             attribut7 = row[6]
+            if attribut6 == "Angaben zur Person":
+                continue
             if zeilennr == 0:
                 drop_table = f'''
                 DROP TABLE IF EXISTS "{bundesland}";
