@@ -97,7 +97,6 @@ legende.onAdd = function (map) {
     div.innerHTML += '<i style="background: #2A81CB"></i> Ambulant<br>';
     div.innerHTML += '<i style="background: #CB2B3E"></i> Stationär<br>';
     div.innerHTML += '<i style="background: #9C2BCB"></i> Beides<br>';
-    div.innerHTML += '<i style="background: #7B7B7B"></i> Keine Angabe';
     return div;
 };
 
