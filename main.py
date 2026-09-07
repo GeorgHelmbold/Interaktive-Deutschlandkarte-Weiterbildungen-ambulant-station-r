@@ -54,18 +54,20 @@ def favicon():
 
 @app.get("/karte", response_class=HTMLResponse)
 def karte(request: Request):
-    return templates.TemplateResponse(request, "karte.html", {})
-
-
-@app.get("/api/standorte", response_class=JSONResponse)
-def api_standorte():
     with create_connection(config) as conn:
         cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         cur.execute("SELECT * FROM alle_bundesländer")
         rows = cur.fetchall()
         cur.close()
-    return [dict(row) for row in rows]
 
+    rows_dicts = [dict(row) for row in rows]
+    standorte_json = json.dumps(rows_dicts, ensure_ascii=False).replace("</", "<\\/")
+    
+    return templates.TemplateResponse(
+        request, 
+        "karte.html", 
+        {"standorte_json": standorte_json}
+    )
 
 @app.get("/suche", response_class=HTMLResponse)
 def suche(request: Request, bundesland: str, ort_begriff: str = "", person_begriff: str = "", typ: str = "alle"):
