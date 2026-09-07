@@ -1,8 +1,6 @@
 from pathlib import Path
 import sys
-
 import pandas as pd
-
 
 projektordner = Path(__file__).resolve().parent
 excel_dateien = sorted(projektordner.glob('*.xlsx'))

@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import json
@@ -22,7 +22,6 @@ bundesländer = ["Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Breme
                 "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"]
 
 config = ConnectionConfig()
-
 
 @contextmanager
 def create_connection(
@@ -47,6 +46,11 @@ def home(request: Request):
         "index.html",
         {"bundeslaender": bundesländer}
     )
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    # SVG statt ico
+    return FileResponse("static/favicon.svg", media_type="image/svg+xml")
 
 @app.get("/karte", response_class=HTMLResponse)
 def karte(request: Request):
