@@ -13,19 +13,16 @@
         <li><a href="/chart">Karte mit integrierter Tabellensuche (/chart)</a></li>
     </ul>
 
-    <h2>Gesamtübersichten</h2>
+    <h2>Gesamtübersicht & Suche</h2>
     <ul>
-        <li><a href="/data">Tabelle aller Einrichtungen (bundesweit)</a></li>
-        <li><a href="/suche-alle">Suchmaske für alle Bundesländer</a></li>
+        <li><a href="/suche-alle">Suche über alle Bundesländer</a></li>
     </ul>
 
-    <h2>Übersichten nach Bundesland</h2>
+    <h2>Suche nach Bundesland</h2>
     <ul>
         {% for land in bundeslaender %}
         <li>
-            <strong>{{ land }}:</strong>
-            <a href="/data/{{ land }}">Tabelle</a> |
-            <a href="/suche?bundesland={{ land }}">Suche</a>
+            <a href="/suche?bundesland={{ land }}">{{ land }}</a>
         </li>
         {% endfor %}
     </ul>

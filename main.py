@@ -63,42 +63,6 @@ def api_standorte():
     return [dict(row) for row in rows]
 
 
-@app.get("/data", response_class=HTMLResponse)
-def all_bundeslaender(request: Request):
-    with create_connection(config) as conn:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("""SELECT "Landesärztekammer", "Kreis", "ambulant/stationär/niedergelassen", "Weiterbildungsermächtigung für Nephrologie", "Befugnis", "Angaben zur Person", "Einrichtung"
-        FROM alle_bundesländer""")
-        rows = cur.fetchall()
-        cur.close()
-
-    return templates.TemplateResponse(
-        request,
-        "alle_bundeslaender.html",
-        {"rows": rows}
-    )
-
-
-@app.get("/data/{bundesland}", response_class=HTMLResponse)
-def table_access(request: Request, bundesland: str):
-    if bundesland not in bundesländer:
-        return HTMLResponse(content="<h1>Unbekanntes Bundesland</h1>", status_code=404)
-
-    with create_connection(config) as conn:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        query = f"""SELECT "Landesärztekammer", "Kreis", "ambulant/stationär/niedergelassen", "Weiterbildungsermächtigung für Nephrologie", "Befugnis", "Angaben zur Person", "Einrichtung"
-        FROM "{bundesland}" """
-        cur.execute(query)
-        rows = cur.fetchall()
-        cur.close()
-
-    return templates.TemplateResponse(
-        request,
-        "bundesland.html",
-        {"bundesland": bundesland, "rows": rows}
-    )
-
-
 @app.get("/suche", response_class=HTMLResponse)
 def suche(request: Request, bundesland: str, ort_begriff: str = "", person_begriff: str = "", typ: str = "alle"):
     if bundesland not in bundesländer:
