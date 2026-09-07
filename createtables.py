@@ -127,8 +127,7 @@ def maketables(bundesland):
             attribut5 = row[4]
             attribut6 = row[5]
             attribut7 = row[6]
-            if attribut6 == "Angaben zur Person":
-                continue
+            
             if zeilennr == 0:
                 drop_table = f'''
                 DROP TABLE IF EXISTS "{bundesland}";
@@ -139,6 +138,8 @@ def maketables(bundesland):
                 querie = f'CREATE TABLE "{bundesland}" ({spalten_sql}, "lat" DOUBLE PRECISION, "lng" DOUBLE PRECISION, PRIMARY KEY ({pk_spalten}))'
                 cur.execute(querie)
             else:
+                if attribut6 == "Angaben zur Person":
+                    continue
                 kreis = attribut2
                 einrichtung = attribut7
                 koordinaten = geocode(kreis, bundesland, einrichtung)
