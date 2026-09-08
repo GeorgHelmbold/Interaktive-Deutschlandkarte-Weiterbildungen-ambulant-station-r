@@ -1,31 +1,113 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <title>Karte und Suche zu Weiterbildungsermächtigungen in der Neprhologie</title>
-    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karte und Suche zu Weiterbildungsermächtigungen in der Nephrologie</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --border: #e0e2e7;
+    --text: #1f2328;
+    --text-muted: #6b7280;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --radius: 8px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 2rem;
+    max-width: 720px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 2rem 0;
+  }
+
+  h2 {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin: 0 0 0.75rem 0;
+  }
+
+  section {
+    margin-bottom: 2rem;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  li {
+    border-bottom: 1px solid var(--border);
+  }
+
+  li:last-child {
+    border-bottom: none;
+  }
+
+  li a {
+    display: block;
+    padding: 0.7rem 1rem;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: background 0.15s ease;
+  }
+
+  li a:hover {
+    background: var(--bg);
+    color: var(--accent-hover);
+  }
+</style>
 </head>
 <body>
-    <h1>Interaktive Karte zu weiterbildungsermächtigten nephrologischen Einrichtungen in Deutschland</h1>
+<h1>Interaktive Karte zu weiterbildungsermächtigten nephrologischen Einrichtungen in Deutschland</h1>
 
-    <h2>Karten & Kombinierte Ansichten</h2>
-    <ul>
-        <li><a href="/chart">Interaktive Karte aller Standorte mit integrierter Tabellensuche</a></li>
-        <li><a href="/karte">Interaktive Karte aller Standorte</a></li>
-    </ul>
+<section>
+<h2>Karten & Kombinierte Ansichten</h2>
+<ul>
+<li><a href="/chart">Interaktive Karte aller Standorte mit integrierter Tabellensuche</a></li>
+<li><a href="/karte">Interaktive Karte aller Standorte</a></li>
+</ul>
+</section>
 
-    <h2>Gesamtübersicht & Suche</h2>
-    <ul>
-        <li><a href="/suche-alle">Suche über alle Bundesländer</a></li>
-    </ul>
+<section>
+<h2>Gesamtübersicht & Suche</h2>
+<ul>
+<li><a href="/suche-alle">Suche über alle Bundesländer</a></li>
+</ul>
+</section>
 
-    <h2>Suche nach Bundesland</h2>
-    <ul>
+<section>
+<h2>Suche nach Bundesland</h2>
+<ul>
         {% for land in bundeslaender %}
-        <li>
-            <a href="/suche?bundesland={{ land }}">{{ land }}</a>
-        </li>
+<li>
+<a href="/suche?bundesland={{ land }}">{{ land }}</a>
+</li>
         {% endfor %}
-    </ul>
+</ul>
+</section>
 </body>
 </html>
