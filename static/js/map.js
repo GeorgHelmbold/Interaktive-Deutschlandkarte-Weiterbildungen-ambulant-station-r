@@ -1,9 +1,9 @@
 var map = L.map('map', {
-    minZoom: 6,
+    minZoom: 4,
     maxZoom: 16,
     maxBounds: L.latLngBounds(L.latLng(46.0, 2.5), L.latLng(57.0, 18.5)),
     maxBoundsViscosity: 0.5
-}).setView([51.1657, 10.4515], 6);
+}).setView([51.1657, 10.4515], 5);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
