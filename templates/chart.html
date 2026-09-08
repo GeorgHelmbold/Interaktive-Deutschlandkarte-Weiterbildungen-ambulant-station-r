@@ -140,6 +140,20 @@ crossorigin=""/>
     color: var(--text-muted);
     font-size: 0.95rem;
   }
+
+  /* Nur mobil: Tabelle horizontal scrollbar machen, Desktop bleibt unverändert */
+  @media (max-width: 768px) {
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: var(--radius);
+    }
+
+    .table-scroll table {
+      min-width: 600px; /* erzwingt Scrollen statt Zusammenquetschen */
+      border-radius: 0;
+    }
+  }
 </style>
 </head>
 <body>
@@ -171,6 +185,7 @@ window.STANDORTE_DATA = {{ standorte_json | safe }};
 </form>
 
 {% if rows %}
+<div class="table-scroll">
 <table>
   <tr>
     {% for key in rows[0].keys() %}
@@ -185,6 +200,7 @@ window.STANDORTE_DATA = {{ standorte_json | safe }};
   </tr>
   {% endfor %}
 </table>
+</div>
 {% else %}
 <p>Keine Ergebnisse gefunden.</p>
 {% endif %}
