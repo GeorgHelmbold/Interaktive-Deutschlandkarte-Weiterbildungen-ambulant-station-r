@@ -101,3 +101,7 @@ legende.onAdd = function (map) {
 };
 
 legende.addTo(map);
+
+window.addEventListener('resize', function () {
+    map.invalidateSize();
+});
