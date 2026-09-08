@@ -103,18 +103,13 @@ crossorigin=""/>
     background: var(--accent-hover);
   }
 
-  .table-wrapper {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
-
   table {
     width: 100%;
     border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
     font-size: 0.9rem;
   }
 
@@ -122,7 +117,6 @@ crossorigin=""/>
     text-align: left;
     padding: 0.6rem 0.9rem;
     border-bottom: 1px solid var(--border);
-    white-space: nowrap;
   }
 
   th {
@@ -145,25 +139,6 @@ crossorigin=""/>
   p {
     color: var(--text-muted);
     font-size: 0.95rem;
-  }
-
-  /* --- Mobile-Anpassungen --- */
-  @media (max-width: 768px) {
-    body {
-      padding: 1rem;
-    }
-
-    table {
-      min-width: 600px; /* erzwingt horizontales Scrollen statt Umbruch/Quetschen */
-    }
-
-    form {
-      padding: 0.85rem 1rem;
-    }
-
-    form input[type="text"] {
-      flex: 1 1 100%;
-    }
   }
 </style>
 </head>
@@ -196,7 +171,6 @@ window.STANDORTE_DATA = {{ standorte_json | safe }};
 </form>
 
 {% if rows %}
-<div class="table-wrapper">
 <table>
   <tr>
     {% for key in rows[0].keys() %}
@@ -211,7 +185,6 @@ window.STANDORTE_DATA = {{ standorte_json | safe }};
   </tr>
   {% endfor %}
 </table>
-</div>
 {% else %}
 <p>Keine Ergebnisse gefunden.</p>
 {% endif %}
