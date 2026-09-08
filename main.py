@@ -12,7 +12,11 @@ from entities import ConnectionConfig, GeocodingConfig
 geo_config = GeocodingConfig()
 API_KEY = geo_config.locationiq_api_key
 
-app = FastAPI()
+app = FastAPI(
+    docs_url=None,      # Deaktiviert /docs (Swagger UI)
+    redoc_url=None,     # Deaktiviert /redoc
+    openapi_url=None    # Deaktiviert /openapi.json (wichtig, sonst ist das Schema noch lesbar!)
+)
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
