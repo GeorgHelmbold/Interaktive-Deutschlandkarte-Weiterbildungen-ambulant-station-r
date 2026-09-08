@@ -1,5 +1,5 @@
 var map = L.map('map', {
-    minZoom: 3,
+    minZoom: 2,
     maxZoom: 16,
     maxBounds: L.latLngBounds(L.latLng(46.0, 2.5), L.latLng(57.0, 18.5)),
     maxBoundsViscosity: 0.5
