@@ -58,3 +58,8 @@ margin-right: 8px;
 border-radius: 50%;
 border: 1px solid #00000040;
 }
+
+/* Hebt die gesamte Popup-Ebene über die Legende und alle Leaflet-Controls */
+.leaflet-pane.leaflet-popup-pane {
+    z-index: 1001 !important;
+}
