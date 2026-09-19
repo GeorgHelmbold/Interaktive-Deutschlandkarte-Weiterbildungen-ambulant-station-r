@@ -7,8 +7,11 @@
     #map {
         height: 50vh; /* skaliert mit der tatsächlichen Bildschirmhöhe */
     }
-    .leaflet-popup-content {
+
+    .leaflet-popup-content,
+    .leaflet-popup-scrolled {
         width: 240px !important;
+        max-height: 38vh !important; /* Passt die Höhe an die 50vh der Karte an */
         margin: 12px 14px;
         font-size: 0.85rem;
         line-height: 1.45;
