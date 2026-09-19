@@ -108,11 +108,20 @@ window.addEventListener('resize', function () {
 
 // Legende ausblenden, wenn ein Popup geöffnet wird, und beim Schließen wieder zeigen
 map.on('popupopen', function() {
-    var leg = document.querySelector('.info.legend');
-    if (leg) leg.style.display = 'none';
+    var legendeEl = document.querySelector('.info.legend');
+    var zoomEl = document.querySelector('.leaflet-control-zoom');
+
+    if (legendeEl) legendeEl.style.display = 'none';
+    // Zoom nur auf Mobile ausblenden:
+    if (zoomEl && window.innerWidth <= 768) {
+        zoomEl.style.display = 'none';
+    }
 });
 
 map.on('popupclose', function() {
-    var leg = document.querySelector('.info.legend');
-    if (leg) leg.style.display = 'block';
+    var legendeEl = document.querySelector('.info.legend');
+    var zoomEl = document.querySelector('.leaflet-control-zoom');
+
+    if (legendeEl) legendeEl.style.display = 'block';
+    if (zoomEl) zoomEl.style.display = 'block';
 });
