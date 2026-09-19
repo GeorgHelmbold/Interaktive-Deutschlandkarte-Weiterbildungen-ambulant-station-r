@@ -1,7 +1,7 @@
 var map = L.map('map', {
     minZoom: 4,
     maxZoom: 16,
-    maxBounds: L.latLngBounds(L.latLng(40.0, 0.0), L.latLng(65.0, 22.5)),
+    maxBounds: L.latLngBounds(L.latLng(30.0, 0.0), L.latLng(75.0, 22.5)),
     maxBoundsViscosity: 0.5
 }).setView([51.1657, 10.4515], 5);
 
