@@ -6,7 +6,11 @@ var map = L.map('map', {
 }).setView([51.1657, 10.4515], 5);
 
 map.createPane('customPopupPane');
-map.getPane('customPopupPane').style.zIndex = 1100;
+var popupPane = map.getPane('customPopupPane');
+popupPane.style.zIndex = 1100;
+
+// Aus der map-pane herausholen und direkt in den Hauptcontainer legen
+map.getContainer().appendChild(popupPane);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
