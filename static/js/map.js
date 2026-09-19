@@ -5,6 +5,9 @@ var map = L.map('map', {
     maxBoundsViscosity: 0.5
 }).setView([51.1657, 10.4515], 5);
 
+map.createPane('customPopupPane');
+map.getPane('customPopupPane').style.zIndex = 1100;
+
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -76,7 +79,7 @@ function zeigeStandorte(standorte) {
 
         var popupContent = gruppe.map(formatiereEintrag).join('<hr>');
 
-        marker.bindPopup(popupContent, { minWidth: 200, maxWidth: 450, maxHeight: 300, autoPan: true, autoPanPadding: [10, 10] });
+        marker.bindPopup(popupContent, { pane: 'customPopupPane', minWidth: 200, maxWidth: 450, maxHeight: 300, autoPan: true, autoPanPadding: [10, 10] });
     });
 }
 
