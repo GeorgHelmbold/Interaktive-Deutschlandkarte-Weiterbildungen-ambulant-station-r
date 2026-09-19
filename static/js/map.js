@@ -76,7 +76,7 @@ function zeigeStandorte(standorte) {
 
         var popupContent = gruppe.map(formatiereEintrag).join('<hr>');
 
-        marker.bindPopup(popupContent, { maxWidth: 450, maxHeight: 300, autoPan: true, autoPanPadding: [10, 10] });
+        marker.bindPopup(popupContent, { minWidth: 200, maxWidth: 450, maxHeight: 300, autoPan: true, autoPanPadding: [10, 10] });
     });
 }
 
