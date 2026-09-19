@@ -105,3 +105,14 @@ legende.addTo(map);
 window.addEventListener('resize', function () {
     map.invalidateSize();
 });
+
+// Legende ausblenden, wenn ein Popup geöffnet wird, und beim Schließen wieder zeigen
+map.on('popupopen', function() {
+    var leg = document.querySelector('.info.legend');
+    if (leg) leg.style.display = 'none';
+});
+
+map.on('popupclose', function() {
+    var leg = document.querySelector('.info.legend');
+    if (leg) leg.style.display = 'block';
+});
