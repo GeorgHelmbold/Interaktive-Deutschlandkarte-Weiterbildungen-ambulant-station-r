@@ -111,10 +111,11 @@ map.on('popupopen', function() {
     var legendeEl = document.querySelector('.info.legend');
     var zoomEl = document.querySelector('.leaflet-control-zoom');
 
-    if (legendeEl) legendeEl.style.display = 'none';
+    
     // Zoom nur auf Mobile ausblenden:
     if (zoomEl && window.innerWidth <= 768) {
         zoomEl.style.display = 'none';
+        if (legendeEl) legendeEl.style.display = 'none';
     }
 });
 
