@@ -134,7 +134,7 @@ def maketables(bundesland):
                 '''
                 cur.execute(drop_table)
                 spalten_sql = ", ".join(f'"{name}" text' for name in spaltennamen)
-                pk_spalten = ", ".join(f'"{name}"' for name in spaltennamen[-5:])
+                pk_spalten = ", ".join(f'"{name}"' for name in spaltennamen[-2:])
                 querie = f'CREATE TABLE "{bundesland}" ({spalten_sql}, "lat" DOUBLE PRECISION, "lng" DOUBLE PRECISION, PRIMARY KEY ({pk_spalten}))'
                 cur.execute(querie)
             else:
@@ -159,6 +159,10 @@ drop_view = '''
 cur.execute(drop_view)
 conn.commit()
 
+
+cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
+conn.commit()
+
 for bundesland in bundesländer:
     maketables(bundesland)
 conn.commit()
@@ -167,8 +171,16 @@ union_parts = [
     f'SELECT *, \'{bundesland}\' AS bundesland FROM "{bundesland}"'
     for bundesland in bundesländer
 ]
+
 view_query = "CREATE MATERIALIZED VIEW alle_bundesländer AS\n" + "\nUNION ALL\n".join(union_parts) + ";"
 cur.execute(view_query)
+
+# Trigram-Indizes für schnelle Teilwortsuche (ILIKE '%wort%')
+cur.execute('CREATE INDEX idx_view_person_trgm ON alle_bundesländer USING gin ("Angaben zur Person" gin_trgm_ops);')
+cur.execute('CREATE INDEX idx_view_einrichtung_trgm ON alle_bundesländer USING gin ("Einrichtung" gin_trgm_ops);')
+cur.execute('CREATE INDEX idx_view_kreis_trgm ON alle_bundesländer USING gin ("Kreis" gin_trgm_ops);')
+# B-Tree für exakte Filterung (Radio-Button ambulant/stationär)
+cur.execute('CREATE INDEX idx_view_typ ON alle_bundesländer USING gin ("ambulant/stationär/niedergelassen" gin_trgm_ops);')
 conn.commit()
 
 cur.close()
