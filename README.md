@@ -31,67 +31,50 @@ Die Namen der Variablen entsprechen den Einstellungen in `entities.py`. Der
 PostgreSQL-Benutzer muss die Datenbanktabellen und die materialisierte Ansicht
 erstellen bzw. löschen dürfen.
 
-## Installation und Start
+## Installation und Start (Systemd)
 
-Für den vollständigen Standard-Setup im Projektordner genügt:
+Die Anwendung ist so konfiguriert, dass sie als permanenter Hintergrunddienst (Systemd-Service) auf einem Linux-Server läuft. Die Einrichtung erfolgt in drei Schritten.
 
+### 1. Erstmalige Einrichtung (Setup)
+
+Wenn der Server komplett neu aufgesetzt wird, gehe in dieser Reihenfolge vor:
+
+1. **Daten bereitstellen:** Lege genau eine `.xlsx`-Datei in den Projektordner.
+2. **Datenbank erstellen** Erstelle die PostgreSQL Datenbank und erstelle die .env, wie erklärt.
+2. **Datenbank aufbauen:** Führe das Start-Skript aus. Dies erstellt die virtuelle Umgebung, installiert alle Abhängigkeiten, konvertiert die Excel-Datei, baut die PostgreSQL-Tabellen auf und löscht temporäre Dateien:
+   ```bash
+   ./start.sh
+   ```
+3. **Dienst installieren (Einmalig):** Richte den Systemd-Service ein, der den FastAPI-Server ab sofort steuert und im Hintergrund am Laufen hält:
+   ```bash
+   ./install_service.sh
+   ```
+
+Der Server ist nun unter http://127.0.0.1:8000/karte erreichbar. Die interaktive API-Dokumentation befindet sich unter http://127.0.0.1:8000/docs.
+
+### 2. Daten aktualisieren (Alltäglicher Workflow)
+
+Wenn es neue Daten gibt, musst du den Service nicht manuell stoppen. 
+
+1. Tausche einfach die `.xlsx`-Datei im Projektordner aus.
+2. Führe `./start.sh` aus. 
+
+Das Skript bereitet die neue Datenbank vor und teilt Systemd am Ende automatisch mit, dass der Server mit den neuen Daten neu gestartet werden soll.
+
+### 3. Server-Steuerung & Logs
+
+Da der Server im Hintergrund läuft (gesteuert durch `run.sh`), nutzt du zur Steuerung nun die systemeigenen Befehle:
+
+- **Status prüfen:** `sudo systemctl status fastapi.service`
+- **Server stoppen:** `sudo systemctl stop fastapi.service`
+- **Server starten:** `sudo systemctl start fastapi.service`
+
+**Live-Logs ansehen:**
+Fehlermeldungen und Konsolenausgaben von Uvicorn werden von Systemd gesammelt. Du kannst sie dir in Echtzeit ansehen mit:
 ```bash
-./start.sh
+sudo journalctl -u fastapi.service -f
 ```
-
-Dieser Start ist der "Neuanfang": Er erstellt die virtuelle Umgebung neu, lädt
-Abhängigkeiten, konvertiert die `.xlsx`-Datei in CSV-Dateien, baut die
-Datenbanktabellen neu auf und startet danach den Server.
-
-Wenn du nur die bereits vorbereitete Umgebung starten willst, ohne die Datenbank
-und CSV-Dateien erneut neu aufzubauen, kannst du direkt dieses Skript ausführen:
-
-```bash
-./run.sh
-```
-
-`run.sh` ist der "Schnellstart": Es aktiviert die vorhandene `.venv`, setzt
-bei Bedarf die Ausführungserlaubnis für sich selbst und startet nur die
-FastAPI-Anwendung. Es führt keine Datenkonvertierung und keinen Neuaufbau der
-Datenbank durch.
-
-`start.sh` ist für einen vollständigen Datenimport gedacht. Bei jedem Aufruf
-wird die einzige Excel-Datei im Projektordner erneut in CSV-Dateien umgewandelt
-und die Datenbank anschließend vollständig neu aufgebaut. Gibt es keine oder
-mehr als eine `.xlsx`-Datei, wird der Start mit einer Fehlermeldung abgebrochen.
-
-`start.sh` führt diese Schritte aus:
-
-1. Es erstellt `.venv` und aktiviert die virtuelle Umgebung.
-2. Es installiert bzw. aktualisiert die Pakete aus `requirements.txt`.
-3. Es führt `convert.py` aus und erzeugt die CSV-Dateien der Bundesländer.
-4. Es führt `createtables.py` aus und baut die PostgreSQL-Daten neu auf.
-5. Es startet die FastAPI-Anwendung mit Uvicorn.
-
-Die Anwendung ist anschließend unter http://127.0.0.1:8000/karte erreichbar.
-Die interaktive API-Dokumentation befindet sich unter
-http://127.0.0.1:8000/docs.
-
-Zum Beenden des Servers `Ctrl+C` drücken. Die venv wird beim nächsten Start
-wiederverwendet. Manuell verlassen lässt sie sich mit:
-
-```bash
-deactivate
-```
-
-### Manueller Start
-
-Falls die Schritte einzeln ausgeführt werden sollen:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-python convert.py
-python createtables.py
-uvicorn main:app --reload
-```
+*(Beenden der Ansicht mit `Ctrl+C`)*
 
 ## Datenverarbeitung
 
@@ -146,7 +129,9 @@ main.py                 FastAPI-Anwendung und Routen
 entities.py             Konfiguration für Datenbank und LocationIQ
 convert.py              Excel-zu-CSV-Konvertierung
 createtables.py         Tabellen, Geocoding und materialisierte Ansicht
-start.sh                Einrichtung der venv und Anwendungsstart
+install_service.sh      (Einmalig) Erstellt den Systemd-Hintergrunddienst
+start.sh                Daten-Update: VENV laden, Tabellen neu bauen, Service neustarten
+run.sh                  Wird von Systemd genutzt, um den reinen Webserver zu starten
 requirements.txt        Python-Abhängigkeiten
 templates/              HTML-Templates
 static/                 CSS und JavaScript
@@ -154,10 +139,8 @@ static/                 CSS und JavaScript
 
 ## Fehlerbehebung
 
-- **Fehlende Einstellungen:** `.env` prüfen; alle sechs Konfigurationswerte
-	müssen vorhanden sein.
-- **Datenbankfehler:** Prüfen, ob PostgreSQL läuft, die Zugangsdaten stimmen
-	und der Benutzer Tabellen anlegen darf.
-- **Fehlende oder mehrere Excel-Dateien:** Genau eine `.xlsx`-Datei in den
-	Projektordner legen. Ihr Dateiname ist beliebig.
+- **Fehlende Einstellungen:** `.env` prüfen; alle sechs Konfigurationswerte müssen vorhanden sein.
+- **Datenbankfehler:** Prüfen, ob PostgreSQL läuft, die Zugangsdaten stimmen und der Benutzer Tabellen anlegen darf.
+- **Fehlende oder mehrere Excel-Dateien:** Genau eine `.xlsx`-Datei in den Projektordner legen. Ihr Dateiname ist beliebig.
 - **Kein Geocoding:** LocationIQ-Key, Internetverbindung und API-Limit prüfen.
+- **Server startet nicht (Systemd):** Nutze `sudo journalctl -u fastapi.service -n 50`, um dir die letzten 50 Zeilen der Server-Fehlermeldungen anzeigen zu lassen.
