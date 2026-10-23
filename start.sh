@@ -25,6 +25,8 @@ if (( ${#excel_dateien[@]} != 1 )); then
     exit 1
 fi
 
+sudo systemctl stop fastapi.service || true
+
 # Daten konvertieren und Tabellen erstellen
 python convert.py
 python createtables.py
