@@ -134,7 +134,7 @@ def maketables(bundesland):
                 '''
                 cur.execute(drop_table)
                 spalten_sql = ", ".join(f'"{name}" text' for name in spaltennamen)
-                pk_spalten = ", ".join(f'"{name}"' for name in spaltennamen[-2:])
+                pk_spalten = ", ".join(f'"{name}"' for name in spaltennamen[-4:])
                 querie = f'CREATE TABLE "{bundesland}" ({spalten_sql}, "lat" DOUBLE PRECISION, "lng" DOUBLE PRECISION, PRIMARY KEY ({pk_spalten}))'
                 cur.execute(querie)
             else:
