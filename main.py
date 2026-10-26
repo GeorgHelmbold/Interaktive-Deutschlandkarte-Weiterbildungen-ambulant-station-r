@@ -7,10 +7,7 @@ import psycopg2
 import psycopg2.extras
 from contextlib import contextmanager
 from typing import Generator
-from entities import ConnectionConfig, GeocodingConfig
-
-geo_config = GeocodingConfig()
-API_KEY = geo_config.locationiq_api_key
+from entities import ConnectionConfig
 
 app = FastAPI(
     docs_url=None,      # Deaktiviert /docs (Swagger UI)

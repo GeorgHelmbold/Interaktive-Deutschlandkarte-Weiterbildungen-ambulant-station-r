@@ -11,4 +11,4 @@ class ConnectionConfig(BaseSettings):
 
 class GeocodingConfig(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-    locationiq_api_key: str
+    mapatlas_api_key: str
