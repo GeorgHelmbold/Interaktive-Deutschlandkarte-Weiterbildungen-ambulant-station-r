@@ -138,5 +138,5 @@ static/                 CSS und JavaScript
 - **Fehlende Einstellungen:** `.env` prüfen; alle sechs Konfigurationswerte müssen vorhanden sein.
 - **Datenbankfehler:** Prüfen, ob PostgreSQL läuft, die Zugangsdaten stimmen und der Benutzer Tabellen anlegen darf.
 - **Fehlende oder mehrere Excel-Dateien:** Genau eine `.xlsx`-Datei in den Projektordner legen. Ihr Dateiname ist beliebig.
-- **Kein Geocoding:** API-Key, Internetverbindung und API-Limit prüfen.
+- **Kein Geocoding:** API-Key, Internetverbindung, DNS-Auflösung des Geocoding-Hosts und API-Limit prüfen. Wenn die Verbindung nach mehreren Versuchen weiterhin fehlschlägt oder die API dauerhaft einen HTTP-Fehler meldet, wird der Tabellenaufbau vor dem Commit abgebrochen statt unvollständige Koordinaten zu speichern; bestehende Tabellen und die materialisierte Ansicht bleiben erhalten. Behebe die Ursache und starte `./start.sh` erneut.
 - **Server startet nicht (Systemd):** Nutze `sudo journalctl -u fastapi.service -n 50`, um dir die letzten 50 Zeilen der Server-Fehlermeldungen anzeigen zu lassen.

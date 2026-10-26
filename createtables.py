@@ -43,6 +43,8 @@ def extract_adresse(einrichtung: str) -> str:
 def geocode_query(query: str, max_retries: int = 5):
     if query in geo_cache:
         return geo_cache[query]
+    if max_retries < 1:
+        raise ValueError("max_retries muss mindestens 1 sein")
 
     url = "https://api.mapatlas.eu/geocoding/v1/search"
     params = {
@@ -57,20 +59,33 @@ def geocode_query(query: str, max_retries: int = 5):
         try:
             resp = requests.get(url, params=params, timeout=10)
         except requests.exceptions.RequestException as e:
-            print(f"⏳ Netzwerkfehler bei '{query}': {e} — warte {wait}s (Versuch {versuch + 1}/{max_retries})")
+            if versuch + 1 == max_retries:
+                raise RuntimeError(
+                    f"Geocoding für '{query}' nach {max_retries} Netzwerkversuchen abgebrochen "
+                    f"(Fehlertyp: {type(e).__name__})."
+                ) from None
+            print(
+                f"⏳ Netzwerkfehler bei '{query}' ({type(e).__name__}) — "
+                f"warte {wait}s (Versuch {versuch + 1}/{max_retries})"
+            )
             time.sleep(wait)
             wait *= 2
             continue
 
         if resp.status_code == 429:
+            if versuch + 1 == max_retries:
+                raise RuntimeError(
+                    f"Geocoding für '{query}' nach {max_retries} Versuchen wegen HTTP 429 abgebrochen."
+                ) from None
             print(f"⏳ Rate-Limit erreicht bei '{query}', warte {wait}s (Versuch {versuch + 1}/{max_retries})")
             time.sleep(wait)
             wait *= 2
             continue
 
         if resp.status_code != 200:
-            geo_cache[query] = None
-            return None
+            raise RuntimeError(
+                f"Geocoding für '{query}' wegen HTTP {resp.status_code} abgebrochen."
+            ) from None
             
         data = resp.json()
         
@@ -165,11 +180,8 @@ drop_view = '''
     DROP MATERIALIZED VIEW IF EXISTS alle_bundesländer;
 '''
 cur.execute(drop_view)
-conn.commit()
-
 
 cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
-conn.commit()
 
 for bundesland in bundesländer:
     maketables(bundesland)
