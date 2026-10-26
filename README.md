@@ -98,9 +98,10 @@ python createtables.py
 
 Das Skript verarbeitet alle Bundesländer-CSV-Dateien, erstellt für jedes
 Bundesland eine Tabelle und ergänzt die Spalten `lat` und `lng`. Für die
-Adresskoordinaten wird die MapAtlas-Geocoding-API verwendet. Deren Gateway-URL,
-Pfad und Authentifizierungsparameter müssen der aktuellen
-[MapAtlas-OpenAPI-Spezifikation](https://mapatlas.eu/openapi.json) entsprechen.
+Adresskoordinaten wird die kostenlose OpenStreetMap-Geocoding-API von MapAtlas
+verwendet (`/osm-geocode/`, Scope `osm-geocode`). Deren Gateway-URL, Pfad und
+Parameter müssen der [OSM-Tier-Dokumentation](https://docs.mapatlas.xyz/overview/geocoder/osm.md)
+entsprechen.
 Danach wird die materialisierte Ansicht `alle_bundesländer` neu erstellt.
 
 **Achtung:** Die Tabellen und die Ansicht werden bei jedem Lauf gelöscht und
@@ -140,5 +141,5 @@ static/                 CSS und JavaScript
 - **Fehlende Einstellungen:** `.env` prüfen; alle sechs Konfigurationswerte müssen vorhanden sein.
 - **Datenbankfehler:** Prüfen, ob PostgreSQL läuft, die Zugangsdaten stimmen und der Benutzer Tabellen anlegen darf.
 - **Fehlende oder mehrere Excel-Dateien:** Genau eine `.xlsx`-Datei in den Projektordner legen. Ihr Dateiname ist beliebig.
-- **Kein Geocoding:** API-Key, Internetverbindung, DNS-Auflösung des Geocoding-Hosts und API-Limit prüfen. Wenn die Verbindung nach mehreren Versuchen weiterhin fehlschlägt oder die API dauerhaft einen HTTP-Fehler meldet, wird der Tabellenaufbau vor dem Commit abgebrochen statt unvollständige Koordinaten zu speichern; bestehende Tabellen und die materialisierte Ansicht bleiben erhalten. Behebe die Ursache und starte `./start.sh` erneut.
+- **Kein Geocoding:** Bei DNS- oder Netzwerkfehlern Internetverbindung und DNS-Auflösung des Geocoding-Gateways prüfen. HTTP 401/403 bedeutet, dass der Token abgelehnt wurde: `MAPATLAS_API_KEY` in `.env` mit einem gültigen Token aus dem MapAtlas/MapMetrics-Portal aktualisieren. Bei HTTP 429 das API-Limit prüfen. Wenn die Verbindung nach mehreren Versuchen weiterhin fehlschlägt oder die API dauerhaft einen HTTP-Fehler meldet, wird der Tabellenaufbau vor dem Commit abgebrochen statt unvollständige Koordinaten zu speichern; bestehende Tabellen und die materialisierte Ansicht bleiben erhalten. Behebe die Ursache und starte `./start.sh` erneut.
 - **Server startet nicht (Systemd):** Nutze `sudo journalctl -u fastapi.service -n 50`, um dir die letzten 50 Zeilen der Server-Fehlermeldungen anzeigen zu lassen.

@@ -46,12 +46,11 @@ def geocode_query(query: str, max_retries: int = 5):
     if max_retries < 1:
         raise ValueError("max_retries muss mindestens 1 sein")
 
-    url = "https://gateway.mapmetrics-atlas.net/forward-geocode/"
+    url = "https://gateway.mapmetrics-atlas.net/osm-geocode/"
     params = {
         "token": geo_config.mapatlas_api_key,
-        "text": query,               
-        "boundary.country": "de",    # Beschränkt die Suche strikt auf Deutschland
-        "size": 1                    
+        "q": query,
+        "limit": 1,
     }
 
     wait = 0.3
@@ -81,6 +80,13 @@ def geocode_query(query: str, max_retries: int = 5):
             time.sleep(wait)
             wait *= 2
             continue
+
+        if resp.status_code in (401, 403):
+            raise RuntimeError(
+                f"Geocoding für '{query}' wegen HTTP {resp.status_code} abgelehnt. "
+                "Prüfe MAPATLAS_API_KEY in .env und verwende einen gültigen API-Token "
+                "aus dem MapAtlas/MapMetrics-Portal."
+            ) from None
 
         if resp.status_code != 200:
             raise RuntimeError(
