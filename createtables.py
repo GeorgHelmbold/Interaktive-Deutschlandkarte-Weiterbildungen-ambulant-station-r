@@ -46,9 +46,9 @@ def geocode_query(query: str, max_retries: int = 5):
     if max_retries < 1:
         raise ValueError("max_retries muss mindestens 1 sein")
 
-    url = "https://api.mapatlas.eu/geocoding/v1/search"
+    url = "https://gateway.mapmetrics-atlas.net/forward-geocode/"
     params = {
-        "key": geo_config.mapatlas_api_key,
+        "token": geo_config.mapatlas_api_key,
         "text": query,               
         "boundary.country": "de",    # Beschränkt die Suche strikt auf Deutschland
         "size": 1                    

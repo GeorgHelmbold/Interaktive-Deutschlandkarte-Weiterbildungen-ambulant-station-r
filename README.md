@@ -98,8 +98,10 @@ python createtables.py
 
 Das Skript verarbeitet alle Bundesländer-CSV-Dateien, erstellt für jedes
 Bundesland eine Tabelle und ergänzt die Spalten `lat` und `lng`. Für die
-Adresskoordinaten wird ein Geolocation Dienst verwendet. Danach wird die materialisierte
-Ansicht `alle_bundesländer` neu erstellt.
+Adresskoordinaten wird die MapAtlas-Geocoding-API verwendet. Deren Gateway-URL,
+Pfad und Authentifizierungsparameter müssen der aktuellen
+[MapAtlas-OpenAPI-Spezifikation](https://mapatlas.eu/openapi.json) entsprechen.
+Danach wird die materialisierte Ansicht `alle_bundesländer` neu erstellt.
 
 **Achtung:** Die Tabellen und die Ansicht werden bei jedem Lauf gelöscht und
 vollständig neu aufgebaut. Das Skript benötigt eine aktive PostgreSQL-Verbindung
