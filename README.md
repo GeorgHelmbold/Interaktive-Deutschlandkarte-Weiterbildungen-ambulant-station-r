@@ -8,7 +8,7 @@ Gesamttabelle und nach Bundesland gefiltert bereit.
 
 - Python 3.10 oder neuer
 - PostgreSQL
-- ein LocationIQ API-Key für die Adress-Geocodierung
+- ein API-Key für die Adress-Geocodierung
 - genau eine Excel-Datei mit der Endung `.xlsx` im Projektordner
 
 Die Anwendung erwartet eine `.env`-Datei im Projektordner. Sie wird nicht ins
@@ -24,7 +24,7 @@ port=5432
 database=aerzte
 db_username=defuser
 password=DEIN_PASSWORT
-LOCATIONIQ_API_KEY=DEIN_LOCATIONIQ_API_KEY
+MAPATLAS_API_KEY=DEIN_API_KEY
 ```
 
 Die Namen der Variablen entsprechen den Einstellungen in `entities.py`. Der
@@ -102,7 +102,7 @@ python createtables.py
 
 Das Skript verarbeitet alle Bundesländer-CSV-Dateien, erstellt für jedes
 Bundesland eine Tabelle und ergänzt die Spalten `lat` und `lng`. Für die
-Adresskoordinaten wird LocationIQ verwendet. Danach wird die materialisierte
+Adresskoordinaten wird ein Geolocation Dienst verwendet. Danach wird die materialisierte
 Ansicht `alle_bundesländer` neu erstellt.
 
 **Achtung:** Die Tabellen und die Ansicht werden bei jedem Lauf gelöscht und
@@ -126,7 +126,7 @@ und kann wegen der externen Geocoding-Anfragen einige Zeit laufen. Auch
 
 ```text
 main.py                 FastAPI-Anwendung und Routen
-entities.py             Konfiguration für Datenbank und LocationIQ
+entities.py             Konfiguration für Datenbank und Geolocation
 convert.py              Excel-zu-CSV-Konvertierung
 createtables.py         Tabellen, Geocoding und materialisierte Ansicht
 install_service.sh      (Einmalig) Erstellt den Systemd-Hintergrunddienst
@@ -142,5 +142,5 @@ static/                 CSS und JavaScript
 - **Fehlende Einstellungen:** `.env` prüfen; alle sechs Konfigurationswerte müssen vorhanden sein.
 - **Datenbankfehler:** Prüfen, ob PostgreSQL läuft, die Zugangsdaten stimmen und der Benutzer Tabellen anlegen darf.
 - **Fehlende oder mehrere Excel-Dateien:** Genau eine `.xlsx`-Datei in den Projektordner legen. Ihr Dateiname ist beliebig.
-- **Kein Geocoding:** LocationIQ-Key, Internetverbindung und API-Limit prüfen.
+- **Kein Geocoding:** API-Key, Internetverbindung und API-Limit prüfen.
 - **Server startet nicht (Systemd):** Nutze `sudo journalctl -u fastapi.service -n 50`, um dir die letzten 50 Zeilen der Server-Fehlermeldungen anzeigen zu lassen.

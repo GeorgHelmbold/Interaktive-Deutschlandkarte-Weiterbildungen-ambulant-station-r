@@ -44,13 +44,12 @@ def geocode_query(query: str, max_retries: int = 5):
     if query in geo_cache:
         return geo_cache[query]
 
-    url = "https://us1.locationiq.com/v1/search"
+    url = "https://api.mapatlas.eu/geocoding/v1/search"
     params = {
-        "key": geo_config.locationiq_api_key,
-        "q": query,                  # String unberührt lassen!
-        "countrycodes": "de",        # Beschränkt die Suche strikt auf Deutschland (ISO 3166-1 alpha-2)
-        "format": "json",
-        "limit": 1
+        "key": geo_config.mapatlas_api_key,
+        "text": query,               
+        "boundary.country": "de",    # Beschränkt die Suche strikt auf Deutschland
+        "size": 1                    
     }
 
     wait = 0.3
@@ -69,21 +68,30 @@ def geocode_query(query: str, max_retries: int = 5):
             wait *= 2
             continue
 
-        if resp.status_code != 200 or not resp.json():
+        if resp.status_code != 200:
+            geo_cache[query] = None
+            return None
+            
+        data = resp.json()
+        
+        # GeoJSON auf leere Ergebnisse prüfen
+        if not data.get("features"):
             geo_cache[query] = None
             return None
 
-        data = resp.json()[0]
-        result = (float(data["lat"]), float(data["lon"]))
+        # GeoJSON liefert die Koordinaten als [Längengrad, Breitengrad]
+        lon, lat = data["features"][0]["geometry"]["coordinates"]
+        result = (float(lat), float(lon))
+        
         geo_cache[query] = result
-        time.sleep(0.8)
+        time.sleep(0.8) # Eventuell an das Rate-Limit anpassen
         return result
 
     geo_cache[query] = None
     return None
 
 
-FALLBACK_LAT, FALLBACK_LNG = 50.970097, 9.687096  # Bad Hersfeld – bekannter LocationIQ-Fallback
+FALLBACK_LAT, FALLBACK_LNG = 50.970097, 9.687096  # Bad Hersfeld – bekannter Fallback
 
 def geocode(kreis: str, bundesland: str, einrichtung: str):
     adresse = extract_adresse(einrichtung)
