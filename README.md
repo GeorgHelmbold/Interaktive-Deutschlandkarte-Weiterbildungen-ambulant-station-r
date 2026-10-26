@@ -4,7 +4,7 @@
 
 - Python 3.10 oder neuer
 - PostgreSQL
-- ein API-Key für die Adress-Geocodierung
+- ein LocationIQ API-Key für die Adress-Geocodierung
 - genau eine Excel-Datei mit der Endung `.xlsx` im Projektordner
 
 Die Anwendung erwartet eine `.env`-Datei im Projektordner. Sie wird nicht ins
@@ -20,7 +20,7 @@ port=5432
 database=aerzte
 db_username=defuser
 password=DEIN_PASSWORT
-MAPATLAS_API_KEY=DEIN_API_KEY
+LOCATIONIQ_API_KEY=DEIN_LOCATIONIQ_API_KEY
 ```
 
 Die Namen der Variablen entsprechen den Einstellungen in `entities.py`. Der
@@ -98,11 +98,8 @@ python createtables.py
 
 Das Skript verarbeitet alle Bundesländer-CSV-Dateien, erstellt für jedes
 Bundesland eine Tabelle und ergänzt die Spalten `lat` und `lng`. Für die
-Adresskoordinaten wird die kostenlose OpenStreetMap-Geocoding-API von MapAtlas
-verwendet (`/osm-geocode/`, Scope `osm-geocode`). Deren Gateway-URL, Pfad und
-Parameter müssen der [OSM-Tier-Dokumentation](https://docs.mapatlas.xyz/overview/geocoder/osm.md)
-entsprechen.
-Danach wird die materialisierte Ansicht `alle_bundesländer` neu erstellt.
+Adresskoordinaten wird LocationIQ verwendet. Danach wird die materialisierte
+Ansicht `alle_bundesländer` neu erstellt.
 
 **Achtung:** Die Tabellen und die Ansicht werden bei jedem Lauf gelöscht und
 vollständig neu aufgebaut. Das Skript benötigt eine aktive PostgreSQL-Verbindung
@@ -125,7 +122,7 @@ und kann wegen der externen Geocoding-Anfragen einige Zeit laufen. Auch
 
 ```text
 main.py                 FastAPI-Anwendung und Routen
-entities.py             Konfiguration für Datenbank und Geolocation
+entities.py             Konfiguration für Datenbank und LocationIQ
 convert.py              Excel-zu-CSV-Konvertierung
 createtables.py         Tabellen, Geocoding und materialisierte Ansicht
 install_service.sh      (Einmalig) Erstellt den Systemd-Hintergrunddienst
@@ -141,5 +138,5 @@ static/                 CSS und JavaScript
 - **Fehlende Einstellungen:** `.env` prüfen; alle sechs Konfigurationswerte müssen vorhanden sein.
 - **Datenbankfehler:** Prüfen, ob PostgreSQL läuft, die Zugangsdaten stimmen und der Benutzer Tabellen anlegen darf.
 - **Fehlende oder mehrere Excel-Dateien:** Genau eine `.xlsx`-Datei in den Projektordner legen. Ihr Dateiname ist beliebig.
-- **Kein Geocoding:** Bei DNS- oder Netzwerkfehlern Internetverbindung und DNS-Auflösung des Geocoding-Gateways prüfen. HTTP 401/403 bedeutet, dass der Token abgelehnt wurde: `MAPATLAS_API_KEY` in `.env` mit einem gültigen Token aus dem MapAtlas/MapMetrics-Portal aktualisieren. Bei HTTP 429 das API-Limit prüfen. Wenn die Verbindung nach mehreren Versuchen weiterhin fehlschlägt oder die API dauerhaft einen HTTP-Fehler meldet, wird der Tabellenaufbau vor dem Commit abgebrochen statt unvollständige Koordinaten zu speichern; bestehende Tabellen und die materialisierte Ansicht bleiben erhalten. Behebe die Ursache und starte `./start.sh` erneut.
+- **Kein Geocoding:** LocationIQ-Key, Internetverbindung und API-Limit prüfen.
 - **Server startet nicht (Systemd):** Nutze `sudo journalctl -u fastapi.service -n 50`, um dir die letzten 50 Zeilen der Server-Fehlermeldungen anzeigen zu lassen.

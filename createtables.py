@@ -21,7 +21,6 @@ cur = conn.cursor()
 bundesländer = ["Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen", "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen", "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"]
 
 geo_cache = {}  # query-String -> (lat, lng) oder None
-http_session = requests.Session()
 
 def extract_adresse(einrichtung: str) -> str:
     if ',' not in einrichtung:
@@ -44,69 +43,47 @@ def extract_adresse(einrichtung: str) -> str:
 def geocode_query(query: str, max_retries: int = 5):
     if query in geo_cache:
         return geo_cache[query]
-    if max_retries < 1:
-        raise ValueError("max_retries muss mindestens 1 sein")
 
-    url = "https://gateway.mapmetrics-atlas.net/osm-geocode/"
+    url = "https://us1.locationiq.com/v1/search"
     params = {
-        "token": geo_config.mapatlas_api_key,
-        "q": query,
-        "limit": 1,
+        "key": geo_config.locationiq_api_key,
+        "q": query,                  # String unberührt lassen!
+        "countrycodes": "de",        # Beschränkt die Suche strikt auf Deutschland (ISO 3166-1 alpha-2)
+        "format": "json",
+        "limit": 1
     }
 
     wait = 0.3
     for versuch in range(max_retries):
         try:
-            resp = http_session.get(url, params=params, timeout=(3.0, 10.0))
+            resp = requests.get(url, params=params, timeout=10)
         except requests.exceptions.RequestException as e:
-            print(
-                f"⏳ Netzwerkfehler bei '{query}' ({type(e).__name__}) — "
-                f"warte {wait}s (Versuch {versuch + 1}/{max_retries})"
-            )
+            print(f"⏳ Netzwerkfehler bei '{query}': {e} — warte {wait}s (Versuch {versuch + 1}/{max_retries})")
             time.sleep(wait)
             wait *= 2
             continue
 
-        # GEÄNDERT: Auch bei HTTP 5xx (Server-Aussetzer von MapMetrics) automatisch wiederholen
-        if resp.status_code in (429, 500, 502, 503, 504):
-            print(f"⏳ HTTP {resp.status_code} bei '{query}', warte {wait}s (Versuch {versuch + 1}/{max_retries})")
+        if resp.status_code == 429:
+            print(f"⏳ Rate-Limit erreicht bei '{query}', warte {wait}s (Versuch {versuch + 1}/{max_retries})")
             time.sleep(wait)
             wait *= 2
             continue
 
-        if resp.status_code in (401, 403):
-            raise RuntimeError(
-                f"Geocoding für '{query}' wegen HTTP {resp.status_code} abgelehnt. "
-                "Prüfe MAPATLAS_API_KEY in .env und verwende einen gültigen API-Token "
-                "aus dem MapAtlas/MapMetrics-Portal."
-            ) from None
-
-        # GEÄNDERT: Bei sonstigen Fehlern nicht crashen, sondern None zurückgeben (aktiviert den Kreis-Fallback)
-        if resp.status_code != 200:
-            print(f"⚠️ Geocoding für '{query}' wegen HTTP {resp.status_code} fehlgeschlagen.")
-            geo_cache[query] = None
-            return None
-            
-        data = resp.json()
-        
-        # GeoJSON auf leere Ergebnisse prüfen
-        if not data.get("features"):
+        if resp.status_code != 200 or not resp.json():
             geo_cache[query] = None
             return None
 
-        # GeoJSON liefert die Koordinaten als [Längengrad, Breitengrad]
-        lon, lat = data["features"][0]["geometry"]["coordinates"]
-        result = (float(lat), float(lon))
-        
+        data = resp.json()[0]
+        result = (float(data["lat"]), float(data["lon"]))
         geo_cache[query] = result
-        time.sleep(0.2)
+        time.sleep(0.8)
         return result
 
     geo_cache[query] = None
     return None
 
 
-FALLBACK_LAT, FALLBACK_LNG = 50.970097, 9.687096  # Bad Hersfeld – bekannter Fallback
+FALLBACK_LAT, FALLBACK_LNG = 50.970097, 9.687096  # Bad Hersfeld – bekannter LocationIQ-Fallback
 
 def geocode(kreis: str, bundesland: str, einrichtung: str):
     adresse = extract_adresse(einrichtung)
@@ -157,7 +134,7 @@ def maketables(bundesland):
                 '''
                 cur.execute(drop_table)
                 spalten_sql = ", ".join(f'"{name}" text' for name in spaltennamen)
-                pk_spalten = ", ".join(f'"{name}"' for name in spaltennamen[-2:])
+                pk_spalten = ", ".join(f'"{name}"' for name in spaltennamen[-4:])
                 querie = f'CREATE TABLE "{bundesland}" ({spalten_sql}, "lat" DOUBLE PRECISION, "lng" DOUBLE PRECISION, PRIMARY KEY ({pk_spalten}))'
                 cur.execute(querie)
             else:
@@ -180,13 +157,15 @@ drop_view = '''
     DROP MATERIALIZED VIEW IF EXISTS alle_bundesländer;
 '''
 cur.execute(drop_view)
+conn.commit()
+
 
 cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
 conn.commit()
 
 for bundesland in bundesländer:
     maketables(bundesland)
-    conn.commit()
+conn.commit()
 
 union_parts = [
     f'SELECT *, \'{bundesland}\' AS bundesland FROM "{bundesland}"'
