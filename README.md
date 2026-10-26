@@ -1,9 +1,5 @@
 # Interaktive Deutschlandkarte
 
-Webanwendung zur Darstellung von weiterbildungsermächtigten Einrichtungen für
-Nephrologie in Deutschland. Die Anwendung stellt die Daten als Karte, als
-Gesamttabelle und nach Bundesland gefiltert bereit.
-
 ## Voraussetzungen
 
 - Python 3.10 oder neuer
