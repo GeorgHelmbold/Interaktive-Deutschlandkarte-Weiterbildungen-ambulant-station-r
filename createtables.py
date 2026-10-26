@@ -21,7 +21,7 @@ cur = conn.cursor()
 bundesländer = ["Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen", "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen", "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"]
 
 geo_cache = {}  # query-String -> (lat, lng) oder None
-http_session = requests.Session()  # NEU: Hält die TCP/TLS-Verbindung offen
+http_session = requests.Session()
 
 def extract_adresse(einrichtung: str) -> str:
     if ',' not in einrichtung:
@@ -57,14 +57,8 @@ def geocode_query(query: str, max_retries: int = 5):
     wait = 0.3
     for versuch in range(max_retries):
         try:
-            # GEÄNDERT: http_session statt requests + (Connect-Timeout, Read-Timeout)
             resp = http_session.get(url, params=params, timeout=(3.0, 10.0))
         except requests.exceptions.RequestException as e:
-            if versuch + 1 == max_retries:
-                raise RuntimeError(
-                    f"Geocoding für '{query}' nach {max_retries} Netzwerkversuchen abgebrochen "
-                    f"(Fehlertyp: {type(e).__name__})."
-                ) from None
             print(
                 f"⏳ Netzwerkfehler bei '{query}' ({type(e).__name__}) — "
                 f"warte {wait}s (Versuch {versuch + 1}/{max_retries})"
@@ -73,12 +67,9 @@ def geocode_query(query: str, max_retries: int = 5):
             wait *= 2
             continue
 
-        if resp.status_code == 429:
-            if versuch + 1 == max_retries:
-                raise RuntimeError(
-                    f"Geocoding für '{query}' nach {max_retries} Versuchen wegen HTTP 429 abgebrochen."
-                ) from None
-            print(f"⏳ Rate-Limit erreicht bei '{query}', warte {wait}s (Versuch {versuch + 1}/{max_retries})")
+        # GEÄNDERT: Auch bei HTTP 5xx (Server-Aussetzer von MapMetrics) automatisch wiederholen
+        if resp.status_code in (429, 500, 502, 503, 504):
+            print(f"⏳ HTTP {resp.status_code} bei '{query}', warte {wait}s (Versuch {versuch + 1}/{max_retries})")
             time.sleep(wait)
             wait *= 2
             continue
@@ -90,10 +81,11 @@ def geocode_query(query: str, max_retries: int = 5):
                 "aus dem MapAtlas/MapMetrics-Portal."
             ) from None
 
+        # GEÄNDERT: Bei sonstigen Fehlern nicht crashen, sondern None zurückgeben (aktiviert den Kreis-Fallback)
         if resp.status_code != 200:
-            raise RuntimeError(
-                f"Geocoding für '{query}' wegen HTTP {resp.status_code} abgebrochen."
-            ) from None
+            print(f"⚠️ Geocoding für '{query}' wegen HTTP {resp.status_code} fehlgeschlagen.")
+            geo_cache[query] = None
+            return None
             
         data = resp.json()
         
@@ -107,7 +99,7 @@ def geocode_query(query: str, max_retries: int = 5):
         result = (float(lat), float(lon))
         
         geo_cache[query] = result
-        time.sleep(0.2)  # GEÄNDERT: Von 0.8 auf 0.2 gesenkt
+        time.sleep(0.2)
         return result
 
     geo_cache[query] = None
@@ -190,11 +182,11 @@ drop_view = '''
 cur.execute(drop_view)
 
 cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
-conn.commit()  # NEU: Gibt den Datenbank-Lock nach DROP VIEW sofort wieder frei
+conn.commit()
 
 for bundesland in bundesländer:
     maketables(bundesland)
-    conn.commit()  # NEU: Speichert nach jedem Bundesland zwischen
+    conn.commit()
 
 union_parts = [
     f'SELECT *, \'{bundesland}\' AS bundesland FROM "{bundesland}"'
