@@ -21,6 +21,7 @@ cur = conn.cursor()
 bundesländer = ["Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen", "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen", "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"]
 
 geo_cache = {}  # query-String -> (lat, lng) oder None
+http_session = requests.Session()  # NEU: Hält die TCP/TLS-Verbindung offen
 
 def extract_adresse(einrichtung: str) -> str:
     if ',' not in einrichtung:
@@ -56,7 +57,8 @@ def geocode_query(query: str, max_retries: int = 5):
     wait = 0.3
     for versuch in range(max_retries):
         try:
-            resp = requests.get(url, params=params, timeout=10)
+            # GEÄNDERT: http_session statt requests + (Connect-Timeout, Read-Timeout)
+            resp = http_session.get(url, params=params, timeout=(3.0, 10.0))
         except requests.exceptions.RequestException as e:
             if versuch + 1 == max_retries:
                 raise RuntimeError(
@@ -105,7 +107,7 @@ def geocode_query(query: str, max_retries: int = 5):
         result = (float(lat), float(lon))
         
         geo_cache[query] = result
-        time.sleep(0.8) # Eventuell an das Rate-Limit anpassen
+        time.sleep(0.2)  # GEÄNDERT: Von 0.8 auf 0.2 gesenkt
         return result
 
     geo_cache[query] = None
@@ -188,10 +190,11 @@ drop_view = '''
 cur.execute(drop_view)
 
 cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
+conn.commit()  # NEU: Gibt den Datenbank-Lock nach DROP VIEW sofort wieder frei
 
 for bundesland in bundesländer:
     maketables(bundesland)
-conn.commit()
+    conn.commit()  # NEU: Speichert nach jedem Bundesland zwischen
 
 union_parts = [
     f'SELECT *, \'{bundesland}\' AS bundesland FROM "{bundesland}"'
