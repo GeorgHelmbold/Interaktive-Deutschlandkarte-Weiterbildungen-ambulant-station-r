@@ -36,8 +36,8 @@ Die Anwendung ist so konfiguriert, dass sie als permanenter Hintergrunddienst (S
 Wenn der Server komplett neu aufgesetzt wird, gehe in dieser Reihenfolge vor:
 
 1. **Daten bereitstellen:** Lege genau eine `.xlsx`-Datei in den Projektordner.
-2. **Datenbank erstellen** Erstelle die PostgreSQL Datenbank und erstelle die .env, wie erklärt.
-2. **Datenbank aufbauen:** Führe das Start-Skript aus. Dies erstellt die virtuelle Umgebung, installiert alle Abhängigkeiten, konvertiert die Excel-Datei, baut die PostgreSQL-Tabellen auf und löscht temporäre Dateien:
+2. **Datenbank konfigurieren:** Erstelle die PostgreSQL-Datenbank und die `.env`-Datei wie oben beschrieben.
+3. **Datenbank aufbauen:** Führe das Start-Skript aus. Dies erstellt die virtuelle Umgebung, installiert alle Abhängigkeiten, konvertiert die Excel-Datei, baut die PostgreSQL-Tabellen auf und löscht temporäre Dateien:
    ```bash
    ./start.sh
    ```
@@ -46,16 +46,16 @@ Wenn der Server komplett neu aufgesetzt wird, gehe in dieser Reihenfolge vor:
    ./install_service.sh
    ```
 
-Der Server ist nun unter http://127.0.0.1:8000/karte erreichbar. Die interaktive API-Dokumentation befindet sich unter http://127.0.0.1:8000/docs.
+Der Server ist nun unter http://127.0.0.1:8000/karte erreichbar. Die API-Dokumentation unter `/docs` und das OpenAPI-Schema unter `/openapi.json` sind deaktiviert.
 
 ### 2. Daten aktualisieren (Alltäglicher Workflow)
 
-Wenn es neue Daten gibt, musst du den Service nicht manuell stoppen. 
+Wenn es neue Daten gibt, übernimmt `start.sh` das Stoppen und Neustarten des Dienstes.
 
 1. Tausche einfach die `.xlsx`-Datei im Projektordner aus.
 2. Führe `./start.sh` aus. 
 
-Das Skript bereitet die neue Datenbank vor und teilt Systemd am Ende automatisch mit, dass der Server mit den neuen Daten neu gestartet werden soll.
+Das Skript stoppt den Dienst für den Neuaufbau und startet ihn anschließend mit den neuen Daten neu. Schlägt das Update fehl, versucht das Skript ebenfalls, den Dienst wieder zu starten.
 
 ### 3. Server-Steuerung & Logs
 
@@ -111,12 +111,8 @@ und kann wegen der externen Geocoding-Anfragen einige Zeit laufen. Auch
 | Route | Zweck |
 | --- | --- |
 | `/karte` | Interaktive Deutschlandkarte |
-| `/data` | Tabelle aller Bundesländer |
-| `/data/{bundesland}` | Tabelle eines Bundeslandes |
 | `/suche` | Suche innerhalb eines Bundeslandes |
 | `/suche-alle` | Suche über alle Bundesländer |
-| `/api/standorte` | Standortdaten als JSON |
-| `/docs` | Automatische FastAPI-Dokumentation |
 
 ## Projektstruktur
 

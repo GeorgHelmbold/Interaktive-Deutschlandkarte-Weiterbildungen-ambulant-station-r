@@ -47,15 +47,30 @@ function ermittleFarbe(gruppe) {
 }
 
 function formatiereEintrag(standort) {
-    return `
-        <b>${standort["Einrichtung"] || "Unbekannte Einrichtung"}</b><br>
-        <b>Kreis:</b> ${standort["Kreis"]}, ${standort["bundesland"]}<br>
-        <b>Landesärztekammer:</b> ${standort["Landesärztekammer"] || "-"}<br>
-        <b>Art:</b> ${standort["ambulant/stationär/niedergelassen"] || "-"}<br>
-        <b>Weiterbildungsermächtigung:</b> ${standort["Weiterbildungsermächtigung für Nephrologie"] || "-"}<br>
-        <b>Befugnis:</b> ${standort["Befugnis"] || "-"}<br>
-        <b>Angaben zur Person:</b> ${standort["Angaben zur Person"] || "-"}
-    `;
+    const container = document.createElement('div');
+
+    function zeile(label, wert, fett = false) {
+        const element = document.createElement(fett ? 'strong' : 'span');
+        element.textContent = wert || '-';
+
+        if (label) {
+            const labelElement = document.createElement('strong');
+            labelElement.textContent = `${label}: `;
+            container.append(labelElement);
+        }
+
+        container.append(element, document.createElement('br'));
+    }
+
+    zeile('', standort["Einrichtung"] || "Unbekannte Einrichtung", true);
+    zeile('Kreis', `${standort["Kreis"] || '-'}, ${standort["bundesland"] || '-'}`);
+    zeile('Landesärztekammer', standort["Landesärztekammer"]);
+    zeile('Art', standort["ambulant/stationär/niedergelassen"]);
+    zeile('Weiterbildungsermächtigung', standort["Weiterbildungsermächtigung für Nephrologie"]);
+    zeile('Befugnis', standort["Befugnis"]);
+    zeile('Angaben zur Person', standort["Angaben zur Person"]);
+
+    return container;
 }
 
 function zeigeStandorte(standorte) {
@@ -74,20 +89,19 @@ function zeigeStandorte(standorte) {
 
         var marker = L.marker([erster.lat, erster.lng], { icon: icon }).addTo(map);
 
-        var popupContent = gruppe.map(formatiereEintrag).join('<hr>');
+        var popupContent = document.createElement('div');
+        gruppe.forEach((standort, index) => {
+            if (index > 0) {
+                popupContent.append(document.createElement('hr'));
+            }
+            popupContent.append(formatiereEintrag(standort));
+        });
 
         marker.bindPopup(popupContent, { minWidth: 200, maxWidth: 450, maxHeight: 300, autoPan: true, autoPanPadding: [10, 10] });
     });
 }
 
-if (window.STANDORTE_DATA) {
-    zeigeStandorte(window.STANDORTE_DATA);
-} else {
-    fetch('/api/standorte')
-        .then(response => response.json())
-        .then(zeigeStandorte)
-        .catch(error => console.error('Fehler beim Laden der Standorte:', error));
-}
+zeigeStandorte(window.STANDORTE_DATA);
 
 var legende = L.control({ position: 'bottomright' });
 

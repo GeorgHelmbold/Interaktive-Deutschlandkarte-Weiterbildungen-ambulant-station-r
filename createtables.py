@@ -44,7 +44,7 @@ def geocode_query(query: str, max_retries: int = 5):
     if query in geo_cache:
         return geo_cache[query]
 
-    url = "https://us1.locationiq.com/v1/search"
+    url = "https://eu1.locationiq.com/v1/search"
     params = {
         "key": geo_config.locationiq_api_key,
         "q": query,                  # String unberührt lassen!
@@ -87,24 +87,30 @@ FALLBACK_LAT, FALLBACK_LNG = 50.970097, 9.687096  # Bad Hersfeld – bekannter L
 
 def geocode(kreis: str, bundesland: str, einrichtung: str):
     adresse = extract_adresse(einrichtung)
+    kreis_query = f"{kreis}, {bundesland}"
 
     koordinaten = None
     if len(adresse) >= 6:
         koordinaten = geocode_query(adresse)
 
+    if koordinaten == (FALLBACK_LAT, FALLBACK_LNG):
+        print(f"⚠️  LocationIQ-Ersatzkoordinate für '{adresse}' erhalten — versuche den Kreis.")
+        koordinaten = None
+
     if koordinaten is None:
-        print(f"⚠️  Adress-Geocoding fehlgeschlagen für '{adresse}' — Fallback auf Kreis: {kreis}, {bundesland}")
-        koordinaten = geocode_query(f"{kreis}, {bundesland}")
+        print(f"⚠️  Adress-Geocoding fehlgeschlagen für '{adresse}' — Fallback auf Kreis: {kreis_query}")
+        koordinaten = geocode_query(kreis_query)
+
+    if koordinaten == (FALLBACK_LAT, FALLBACK_LNG):
+        print(f"⚠️  LocationIQ-Ersatzkoordinate auch für den Kreis erhalten: {kreis_query}")
 
     if koordinaten is None:
         print(f"❌ Auch Kreis-Fallback fehlgeschlagen: {kreis}, {bundesland}")
-    elif koordinaten == (FALLBACK_LAT, FALLBACK_LNG):
-        print(f"⚠️  Fallback-Koordinate (Bad Hersfeld) erhalten für '{adresse or kreis}' — vermutlich fehlgeschlagenes Geocoding")
 
     return koordinaten
 
 def maketables(bundesland):
-    with open(f'{bundesland}.csv') as csvdatei:
+    with open(f'{bundesland}.csv', encoding="utf-8") as csvdatei:
         csv_reader_object = csv.reader(csvdatei, delimiter=',')
         zeilennr = 0
         spaltennamen = ["Landesärztekammer", "Kreis", "ambulant/stationär/niedergelassen", "Weiterbildungsermächtigung für Nephrologie", "Befugnis", "Angaben zur Person", "Einrichtung"]
@@ -120,15 +126,12 @@ def maketables(bundesland):
                 cur.close()
                 conn.close()
                 sys.exit()
-            attribut1 = row[0]
-            attribut2 = row[1]
-            attribut3 = row[2]
-            attribut4 = row[3]
-            attribut5 = row[4]
-            attribut6 = row[5]
-            attribut7 = row[6]
-            
             if zeilennr == 0:
+                if set(row) != set(spaltennamen):
+                    raise ValueError(
+                        f"{bundesland}.csv hat unerwartete Spaltennamen: {row}"
+                    )
+                spalten_indizes = [row.index(name) for name in spaltennamen]
                 drop_table = f'''
                 DROP TABLE IF EXISTS "{bundesland}";
                 '''
@@ -138,6 +141,9 @@ def maketables(bundesland):
                 querie = f'CREATE TABLE "{bundesland}" ({spalten_sql}, "lat" DOUBLE PRECISION, "lng" DOUBLE PRECISION, PRIMARY KEY ({pk_spalten}))'
                 cur.execute(querie)
             else:
+                attribut1, attribut2, attribut3, attribut4, attribut5, attribut6, attribut7 = (
+                    row[index] for index in spalten_indizes
+                )
                 if attribut6 == "Angaben zur Person":
                     continue
                 kreis = attribut2
@@ -153,19 +159,45 @@ def maketables(bundesland):
             zeilennr += 1
 
 
+def pruefe_duplikate():
+    schluessel_spalten = [
+        "Weiterbildungsermächtigung für Nephrologie",
+        "Befugnis",
+        "Angaben zur Person",
+        "Einrichtung",
+    ]
+
+    for bundesland in bundesländer:
+        with open(f'{bundesland}.csv', encoding="utf-8") as csvdatei:
+            reader = csv.reader(csvdatei)
+            kopfzeile = next(reader)
+            indizes = [kopfzeile.index(spalte) for spalte in schluessel_spalten]
+            gesehen = {}
+
+            for zeilennr, row in enumerate(reader, start=2):
+                if row == kopfzeile:
+                    continue
+                schluessel = tuple(row[index] for index in indizes)
+                if schluessel in gesehen:
+                    raise ValueError(
+                        f"Doppelter Primärschlüssel in {bundesland}.csv, "
+                        f"Zeilen {gesehen[schluessel]} und {zeilennr}."
+                    )
+                gesehen[schluessel] = zeilennr
+
+
+pruefe_duplikate()
+
 drop_view = '''
     DROP MATERIALIZED VIEW IF EXISTS alle_bundesländer;
 '''
 cur.execute(drop_view)
-conn.commit()
 
 
 cur.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;")
-conn.commit()
 
 for bundesland in bundesländer:
     maketables(bundesland)
-conn.commit()
 
 union_parts = [
     f'SELECT *, \'{bundesland}\' AS bundesland FROM "{bundesland}"'
@@ -181,7 +213,7 @@ cur.execute('CREATE INDEX idx_view_einrichtung_trgm ON alle_bundesländer USING 
 cur.execute('CREATE INDEX idx_view_kreis_trgm ON alle_bundesländer USING gin ("Kreis" gin_trgm_ops);')
 # B-Tree für exakte Filterung (Radio-Button ambulant/stationär)
 cur.execute('CREATE INDEX idx_view_typ ON alle_bundesländer USING gin ("ambulant/stationär/niedergelassen" gin_trgm_ops);')
-conn.commit()
 
+conn.commit()
 cur.close()
 conn.close()

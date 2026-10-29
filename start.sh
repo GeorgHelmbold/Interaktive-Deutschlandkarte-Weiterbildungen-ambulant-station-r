@@ -27,6 +27,8 @@ fi
 
 sudo systemctl stop fastapi.service || true
 
+trap 'status=$?; if (( status != 0 )); then echo "Update fehlgeschlagen; starte den Dienst wieder." >&2; sudo systemctl start fastapi.service || echo "Fehler: Dienst konnte nicht gestartet werden." >&2; fi; exit "$status"' EXIT
+
 # Daten konvertieren und Tabellen erstellen
 python convert.py
 python createtables.py
