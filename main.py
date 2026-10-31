@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 import json
@@ -7,10 +7,7 @@ import psycopg2
 import psycopg2.extras
 from contextlib import contextmanager
 from typing import Generator
-from entities import ConnectionConfig, GeocodingConfig
-
-geo_config = GeocodingConfig()
-API_KEY = geo_config.locationiq_api_key
+from entities import ConnectionConfig
 
 app = FastAPI(
     docs_url=None,      # Deaktiviert /docs (Swagger UI)
@@ -28,12 +25,10 @@ async def add_security_headers(request: Request, call_next):
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-bundesländer = ["Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen",
-                "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen",
-                "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen",
-                "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"]
-
 config = ConnectionConfig()
+
+def escape_like_literal(value: str) -> str:
+    return value.replace("!", "!!").replace("%", "!%").replace("_", "!_")
 
 @contextmanager
 def create_connection(
@@ -56,112 +51,12 @@ def home(request: Request):
     return templates.TemplateResponse(
         request,
         "index.html",
-        {"bundeslaender": bundesländer}
+        {}
     )
 
-@app.get("/favicon.ico", include_in_schema=False)
-def favicon():
-    # SVG statt ico
-    return FileResponse("static/favicon.svg", media_type="image/svg+xml")
-
-@app.get("/karte", response_class=HTMLResponse)
-def karte(request: Request):
-    with create_connection(config) as conn:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute("SELECT * FROM alle_bundesländer")
-        rows = cur.fetchall()
-        cur.close()
-
-    rows_dicts = [dict(row) for row in rows]
-    standorte_json = json.dumps(rows_dicts, ensure_ascii=False).replace("</", "<\\/")
-    
-    return templates.TemplateResponse(
-        request, 
-        "karte.html", 
-        {"standorte_json": standorte_json}
-    )
-
-@app.get("/suche", response_class=HTMLResponse)
-def suche(request: Request, bundesland: str, ort_begriff: str = "", person_begriff: str = "", typ: str = "alle"):
-    if bundesland not in bundesländer:
-        return HTMLResponse(content="<h1>Unbekanntes Bundesland</h1>", status_code=404)
-
-    bedingungen = []
-    werte = []
-
-    if ort_begriff:
-        bedingungen.append('("Kreis" ILIKE %s OR "Einrichtung" ILIKE %s)')
-        wert = f"%{ort_begriff}%"
-        werte.extend([wert, wert])
-
-    if person_begriff:
-        bedingungen.append('("Angaben zur Person" ILIKE %s OR "Einrichtung" ILIKE %s)')
-        wert = f"%{person_begriff}%"
-        werte.extend([wert, wert])
-
-    if typ != "alle":
-        bedingungen.append('"ambulant/stationär/niedergelassen" LIKE %s')
-        werte.append(f"%{typ}%")
-
-    where_klausel = " AND ".join(bedingungen) if bedingungen else "TRUE"
-
-    query = '''
-        SELECT "Landesärztekammer", "Kreis", "ambulant/stationär/niedergelassen", "Weiterbildungsermächtigung für Nephrologie", "Befugnis", "Angaben zur Person", "Einrichtung"
-        FROM "{}"
-        WHERE {}
-    '''.format(bundesland, where_klausel)
-
-    with create_connection(config) as conn:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute(query, tuple(werte))
-        rows = cur.fetchall()
-        cur.close()
-
-    return templates.TemplateResponse(
-        request,
-        "bundesland.html",
-        {"bundesland": bundesland, "rows": rows, "typ": typ, "ort_begriff": ort_begriff, "person_begriff": person_begriff}
-    )
-
-
-@app.get("/suche-alle", response_class=HTMLResponse)
-def suche_alle(request: Request, ort_begriff: str = "", person_begriff: str = "", typ: str = "alle"):
-    bedingungen = []
-    werte = []
-
-    if ort_begriff:
-        bedingungen.append('("Kreis" ILIKE %s OR "Einrichtung" ILIKE %s)')
-        wert = f"%{ort_begriff}%"
-        werte.extend([wert, wert])
-
-    if person_begriff:
-        bedingungen.append('("Angaben zur Person" ILIKE %s OR "Einrichtung" ILIKE %s)')
-        wert = f"%{person_begriff}%"
-        werte.extend([wert, wert])
-
-    if typ != "alle":
-        bedingungen.append('"ambulant/stationär/niedergelassen" LIKE %s')
-        werte.append(f"%{typ}%")
-
-    where_klausel = " AND ".join(bedingungen) if bedingungen else "TRUE"
-
-    query = '''
-        SELECT "Landesärztekammer", "Kreis", "ambulant/stationär/niedergelassen", "Weiterbildungsermächtigung für Nephrologie", "Befugnis", "Angaben zur Person", "Einrichtung"
-        FROM alle_bundesländer
-        WHERE {}
-    '''.format(where_klausel)
-
-    with create_connection(config) as conn:
-        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        cur.execute(query, tuple(werte))
-        rows = cur.fetchall()
-        cur.close()
-
-    return templates.TemplateResponse(
-        request,
-        "alle_bundeslaender.html",
-        {"rows": rows, "typ": typ, "ort_begriff": ort_begriff, "person_begriff": person_begriff}
-    )
+@app.get("/datenschutz", response_class=HTMLResponse)
+def datenschutz():
+    return FileResponse("static/datenschutz.html", media_type="text/html")
 
 @app.get("/chart", response_class=HTMLResponse)
 def chart(request: Request, ort_begriff: str = "", person_begriff: str = "", typ: str = "alle"):
@@ -169,18 +64,18 @@ def chart(request: Request, ort_begriff: str = "", person_begriff: str = "", typ
     werte = []
 
     if ort_begriff:
-        bedingungen.append('("Kreis" ILIKE %s OR "Einrichtung" ILIKE %s)')
-        wert = f"%{ort_begriff}%"
+        bedingungen.append('("Kreis" ILIKE %s ESCAPE \'!\' OR "Einrichtung" ILIKE %s ESCAPE \'!\')')
+        wert = f"%{escape_like_literal(ort_begriff)}%"
         werte.extend([wert, wert])
 
     if person_begriff:
-        bedingungen.append('("Angaben zur Person" ILIKE %s OR "Einrichtung" ILIKE %s)')
-        wert = f"%{person_begriff}%"
+        bedingungen.append('("Angaben zur Person" ILIKE %s ESCAPE \'!\' OR "Einrichtung" ILIKE %s ESCAPE \'!\')')
+        wert = f"%{escape_like_literal(person_begriff)}%"
         werte.extend([wert, wert])
 
     if typ != "alle":
-        bedingungen.append('"ambulant/stationär/niedergelassen" LIKE %s')
-        werte.append(f"%{typ}%")
+        bedingungen.append('"ambulant/stationär/niedergelassen" LIKE %s ESCAPE \'!\'')
+        werte.append(f"%{escape_like_literal(typ)}%")
 
     where_klausel = " AND ".join(bedingungen) if bedingungen else "TRUE"
 
