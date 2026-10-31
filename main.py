@@ -17,6 +17,14 @@ app = FastAPI(
     redoc_url=None,     # Deaktiviert /redoc
     openapi_url=None    # Deaktiviert /openapi.json (wichtig, sonst ist das Schema noch lesbar!)
 )
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 

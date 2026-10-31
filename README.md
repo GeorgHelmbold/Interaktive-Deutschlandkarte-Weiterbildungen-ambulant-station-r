@@ -41,12 +41,19 @@ Wenn der Server komplett neu aufgesetzt wird, gehe in dieser Reihenfolge vor:
    ```bash
    ./start.sh
    ```
-3. **Dienst installieren (Einmalig):** Richte den Systemd-Service ein, der den FastAPI-Server ab sofort steuert und im Hintergrund am Laufen hält:
+4. **Dienst installieren (Einmalig):** Richte den Systemd-Service ein, der den FastAPI-Server ab sofort steuert und im Hintergrund am Laufen hält:
    ```bash
    ./install_service.sh
    ```
 
 Der Server ist nun unter http://127.0.0.1:8000/karte erreichbar. Die API-Dokumentation unter `/docs` und das OpenAPI-Schema unter `/openapi.json` sind deaktiviert.
+Antworten enthalten `X-Content-Type-Options: nosniff` und die
+`Referrer-Policy: strict-origin-when-cross-origin`.
+
+Leaflet und Markerbilder werden lokal ausgeliefert. Die Kartenkacheln kommen
+weiterhin von `tile.openstreetmap.org`; beim Kartenaufruf wird daher eine
+Verbindung zu OpenStreetMap hergestellt. 
+Leafletcode eventuell auf neueste Version updaten, wenn neuere vorhanden sein sollten.
 
 ### 2. Daten aktualisieren (Alltäglicher Workflow)
 
@@ -57,6 +64,10 @@ Wenn es neue Daten gibt, übernimmt `start.sh` das Stoppen und Neustarten des Di
 
 Das Skript stoppt den Dienst für den Neuaufbau und startet ihn anschließend mit den neuen Daten neu. Schlägt das Update fehl, versucht das Skript ebenfalls, den Dienst wieder zu starten.
 
+Der Dienst läuft unter dem Benutzer, der `install_service.sh` ausführt. Die
+Systemd-Unit enthält zusätzliche Schutzoptionen; der Projektordner muss für
+diesen Benutzer lesbar sein.
+
 ### 3. Server-Steuerung & Logs
 
 Da der Server im Hintergrund läuft (gesteuert durch `run.sh`), nutzt du zur Steuerung nun die systemeigenen Befehle:
@@ -65,12 +76,24 @@ Da der Server im Hintergrund läuft (gesteuert durch `run.sh`), nutzt du zur Ste
 - **Server stoppen:** `sudo systemctl stop fastapi.service`
 - **Server starten:** `sudo systemctl start fastapi.service`
 
+`stop.sh` stoppt den Systemd-Dienst; `resume.sh` startet ihn wieder. `run.sh`
+wird von systemd zum Starten des Servers verwendet. Für einen manuellen Start
+kannst du `./run.sh` direkt ausführen; Uvicorn läuft dann im Vordergrund und
+lässt sich mit `Ctrl+C` beenden. Starte es nicht manuell, während der
+Systemd-Dienst bereits läuft.
+
 **Live-Logs ansehen:**
 Fehlermeldungen und Konsolenausgaben von Uvicorn werden von Systemd gesammelt. Du kannst sie dir in Echtzeit ansehen mit:
 ```bash
 sudo journalctl -u fastapi.service -f
 ```
 *(Beenden der Ansicht mit `Ctrl+C`)*
+
+Den Systemd-Dienst entfernen, ohne Projektdateien oder Datenbank zu löschen:
+
+```bash
+./uninstall_service.sh
+```
 
 ## Datenverarbeitung
 
@@ -98,19 +121,27 @@ python createtables.py
 
 Das Skript verarbeitet alle Bundesländer-CSV-Dateien, erstellt für jedes
 Bundesland eine Tabelle und ergänzt die Spalten `lat` und `lng`. Für die
-Adresskoordinaten wird LocationIQ verwendet. Danach wird die materialisierte
-Ansicht `alle_bundesländer` neu erstellt.
+Adresskoordinaten wird der LocationIQ-EU-Endpunkt verwendet. Die Adresse wird
+anhand der Postleitzahl extrahiert; wenn die Adresssuche fehlschlägt oder die
+bekannte Ersatzkoordinate liefert, wird der Kreis als Fallback abgefragt.
+Erfolgreiche Geocoding-Abfragen werden in `geocode_cache.json` gespeichert und
+bei späteren Importen wiederverwendet. Danach wird die materialisierte Ansicht
+`alle_bundesländer` neu erstellt.
 
 **Achtung:** Die Tabellen und die Ansicht werden bei jedem Lauf gelöscht und
 vollständig neu aufgebaut. Das Skript benötigt eine aktive PostgreSQL-Verbindung
 und kann wegen der externen Geocoding-Anfragen einige Zeit laufen. Auch
 `start.sh` führt diesen vollständigen Neuaufbau bei jedem Start aus.
+Vor dem Neuaufbau prüft das Skript doppelte Primärschlüssel. Die CSV-Spalten
+werden anhand ihrer Namen zugeordnet; ihre Reihenfolge darf abweichen. CSV-Dateien
+werden als UTF-8 gelesen.
 
 ## Wichtige Routen
 
 | Route | Zweck |
 | --- | --- |
 | `/karte` | Interaktive Deutschlandkarte |
+| `/chart` | Karte und gefilterte Ergebnistabelle |
 | `/suche` | Suche innerhalb eines Bundeslandes |
 | `/suche-alle` | Suche über alle Bundesländer |
 

@@ -20,6 +20,14 @@ WorkingDirectory=$PROJECT_DIR
 ExecStart=/bin/bash $PROJECT_DIR/run.sh
 Restart=always
 RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
 
 [Install]
 WantedBy=multi-user.target

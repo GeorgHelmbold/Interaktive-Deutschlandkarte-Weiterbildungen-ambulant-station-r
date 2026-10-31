@@ -77,6 +77,18 @@
     cursor: pointer;
   }
 
+  form label.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   form input[type="radio"] {
     accent-color: var(--accent);
   }
@@ -140,8 +152,10 @@
 <h1>Alle Bundesländer</h1>
 
 <form action="/suche-alle" method="get">
-  <input type="text" name="ort_begriff" placeholder="Suche nach Ort..." value="{{ ort_begriff if ort_begriff else '' }}">
-  <input type="text" name="person_begriff" placeholder="Suche nach Person..." value="{{ person_begriff if person_begriff else '' }}">
+  <label class="visually-hidden" for="ort_begriff">Suche nach Ort</label>
+  <input id="ort_begriff" type="text" name="ort_begriff" placeholder="Suche nach Ort..." value="{{ ort_begriff if ort_begriff else '' }}">
+  <label class="visually-hidden" for="person_begriff">Suche nach Person</label>
+  <input id="person_begriff" type="text" name="person_begriff" placeholder="Suche nach Person..." value="{{ person_begriff if person_begriff else '' }}">
 
   <div class="radio-group">
     <label>
@@ -160,11 +174,14 @@
 
 {% if rows %}
 <table>
+  <thead>
   <tr>
     {% for key in rows[0].keys() %}
-    <th>{{ key }}</th>
+    <th scope="col">{{ key }}</th>
     {% endfor %}
   </tr>
+  </thead>
+  <tbody>
   {% for row in rows %}
   <tr>
     {% for value in row.values() %}
@@ -172,6 +189,7 @@
     {% endfor %}
   </tr>
   {% endfor %}
+  </tbody>
 </table>
 {% else %}
 <p>Keine Ergebnisse gefunden.</p>

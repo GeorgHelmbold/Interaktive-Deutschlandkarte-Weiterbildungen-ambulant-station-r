@@ -1,9 +1,11 @@
 import csv
+import json
 import time
 import requests
 import psycopg2
 import sys
 import re
+from pathlib import Path
 from entities import ConnectionConfig, GeocodingConfig
 
 config = ConnectionConfig()
@@ -20,7 +22,27 @@ cur = conn.cursor()
 
 bundesländer = ["Baden-Württemberg", "Bayern", "Berlin", "Brandenburg", "Bremen", "Hamburg", "Hessen", "Mecklenburg-Vorpommern", "Niedersachsen", "Nordrhein-Westfalen", "Rheinland-Pfalz", "Saarland", "Sachsen", "Sachsen-Anhalt", "Schleswig-Holstein", "Thüringen"]
 
-geo_cache = {}  # query-String -> (lat, lng) oder None
+CACHE_DATEI = Path(__file__).resolve().with_name("geocode_cache.json")
+geo_cache = {}
+
+if CACHE_DATEI.exists():
+    with CACHE_DATEI.open(encoding="utf-8") as cache_datei:
+        geo_cache = json.load(cache_datei)
+    if not isinstance(geo_cache, dict):
+        raise ValueError(f"{CACHE_DATEI} muss ein JSON-Objekt mit Geocoding-Treffern enthalten.")
+    for query, koordinaten in geo_cache.items():
+        if not isinstance(koordinaten, list) or len(koordinaten) != 2:
+            raise ValueError(f"Ungültiger Koordinateneintrag im Geocoding-Cache für {query!r}.")
+        geo_cache[query] = tuple(map(float, koordinaten))
+
+
+def speichere_geo_cache():
+    temporaere_datei = CACHE_DATEI.with_suffix(".json.tmp")
+    temporaere_datei.write_text(
+        json.dumps(geo_cache, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    temporaere_datei.replace(CACHE_DATEI)
 
 def extract_adresse(einrichtung: str) -> str:
     if ',' not in einrichtung:
@@ -29,13 +51,19 @@ def extract_adresse(einrichtung: str) -> str:
     ohne_klammern = re.sub(r'\([^()]*\)', '', einrichtung)
     ohne_klammern = re.sub(r'\s+', ' ', ohne_klammern).strip()
     teile = [t.strip() for t in ohne_klammern.split(',')]
-    letzte_zwei = teile[-2:]
+    plz_index = next(
+        (i for i in range(len(teile) - 1, -1, -1) if re.match(r'^\d{5}\b', teile[i])),
+        None,
+    )
 
-    if not re.match(r'^\d{5}\s', letzte_zwei[-1]):
+    if plz_index is None:
+        letzte_zwei = teile[-2:]
         print(
             "WARNUNG: Adressextraktion auffällig – letztes Segment beginnt nicht mit PLZ: "
             f"einrichtung={einrichtung!r} -> extrahiert={letzte_zwei!r}"
         )
+    else:
+        letzte_zwei = teile[max(0, plz_index - 1):plz_index + 1]
 
     adresse = ', '.join(letzte_zwei)
     return adresse
@@ -70,16 +98,15 @@ def geocode_query(query: str, max_retries: int = 5):
             continue
 
         if resp.status_code != 200 or not resp.json():
-            geo_cache[query] = None
             return None
 
         data = resp.json()[0]
         result = (float(data["lat"]), float(data["lon"]))
         geo_cache[query] = result
+        speichere_geo_cache()
         time.sleep(0.8)
         return result
 
-    geo_cache[query] = None
     return None
 
 
@@ -112,9 +139,13 @@ def geocode(kreis: str, bundesland: str, einrichtung: str):
 def maketables(bundesland):
     with open(f'{bundesland}.csv', encoding="utf-8") as csvdatei:
         csv_reader_object = csv.reader(csvdatei, delimiter=',')
+        gesamt_zeilen = sum(1 for _ in csv_reader_object) - 1
+        csvdatei.seek(0)
+        csv_reader_object = csv.reader(csvdatei, delimiter=',')
         zeilennr = 0
         spaltennamen = ["Landesärztekammer", "Kreis", "ambulant/stationär/niedergelassen", "Weiterbildungsermächtigung für Nephrologie", "Befugnis", "Angaben zur Person", "Einrichtung"]
         spalten_sql_names = ", ".join(f'"{name}"' for name in spaltennamen)
+        bearbeitete_zeilen = 0
         for row in csv_reader_object:
             if len(row) < 7:
                 print("Tabelle hat unerwartet zu wenig Spalten")
@@ -140,11 +171,14 @@ def maketables(bundesland):
                 pk_spalten = ", ".join(f'"{name}"' for name in spaltennamen[-4:])
                 querie = f'CREATE TABLE "{bundesland}" ({spalten_sql}, "lat" DOUBLE PRECISION, "lng" DOUBLE PRECISION, PRIMARY KEY ({pk_spalten}))'
                 cur.execute(querie)
+                zeige_fortschritt(bundesland, 0, gesamt_zeilen)
             else:
                 attribut1, attribut2, attribut3, attribut4, attribut5, attribut6, attribut7 = (
                     row[index] for index in spalten_indizes
                 )
                 if attribut6 == "Angaben zur Person":
+                    bearbeitete_zeilen += 1
+                    zeige_fortschritt(bundesland, bearbeitete_zeilen, gesamt_zeilen)
                     continue
                 kreis = attribut2
                 einrichtung = attribut7
@@ -156,7 +190,20 @@ def maketables(bundesland):
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
                 '''
                 cur.execute(insert_query, (attribut1, attribut2, attribut3, attribut4, attribut5, attribut6, attribut7, lat, lng))
+                bearbeitete_zeilen += 1
+                zeige_fortschritt(bundesland, bearbeitete_zeilen, gesamt_zeilen)
             zeilennr += 1
+
+
+def zeige_fortschritt(bundesland, aktuell, gesamt):
+    breite = 30
+    anteil = aktuell / gesamt if gesamt else 1
+    gefuellt = int(breite * anteil)
+    balken = "#" * gefuellt + "-" * (breite - gefuellt)
+    sys.stdout.write(f"\r{bundesland}: [{balken}] {aktuell}/{gesamt}")
+    sys.stdout.flush()
+    if aktuell >= gesamt:
+        sys.stdout.write("\n")
 
 
 def pruefe_duplikate():

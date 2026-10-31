@@ -1,6 +1,8 @@
 *.csv
 *.xlsx
 .env
+geocode_cache.json
+geocode_cache.json.tmp
 __pycache__/
 *.pyc
 .venv/
